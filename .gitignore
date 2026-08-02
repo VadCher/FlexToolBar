@@ -1,0 +1,16 @@
+## Временные файлы сборки .NET
+bin/
+obj/
+
+## Настройки IDE (VS Code и Rider)
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Логи и кэш ОС
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Multi-targeting ensures compatibility with .NET 8 LTS, .NET 9, and upcoming .NET 10 -->
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+   
+    <!-- Package Metadata -->
+    <Version>0.1.0-alpha</Version>
+    <Authors>Vadim Cherkashin</Authors>
+    <Description>Avalonia 12 UI implementation for FlexToolBar.</Description>
+    <RepositoryUrl>http://github.com/VadCher/FlexToolBar</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Establishing connection to the Core architecture layer -->
+    <ProjectReference Include="..\FlexToolBar.Core\FlexToolBar.Core.csproj" />
+  </ItemGroup>
+</Project>

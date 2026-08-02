@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FlexToolBar.Avalonia.Demo/FlexToolBar.Avalonia.Demo.csproj" />
+    <Project Path="src/FlexToolBar.Avalonia/FlexToolBar.Avalonia.csproj" />
+    <Project Path="src/FlexToolBar.Core/FlexToolBar.Core.csproj" />
+  </Folder>
+</Solution>

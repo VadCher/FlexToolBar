@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Targeting all active modern frameworks for maximum library reach -->
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    
+    <!-- Package Metadata -->
+    <Version>0.1.0-alpha</Version>
+    <Authors>Vadim Cherkashin</Authors>
+    <Description>Core abstraction and state management layer for FlexToolBar.</Description>
+    <RepositoryUrl>http://github.com/VadCher/FlexToolBar</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+</Project>
