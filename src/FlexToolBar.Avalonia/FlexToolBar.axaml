@@ -1,0 +1,9 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://microsoft.com">
+    
+    <!-- Link all component axaml resource templates together -->
+    <StyleInclude Source="avares://FlexToolBar.Avalonia/ToolBar.axaml" />
+    <StyleInclude Source="avares://FlexToolBar.Avalonia/Tab.axaml" />
+    <StyleInclude Source="avares://FlexToolBar.Avalonia/FlexGroup.axaml" />
+    
+</Styles>
