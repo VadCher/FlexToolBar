@@ -21,6 +21,7 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 - `bool IsSingleExpandGroup` (Default: `false`): If `true`, only one unpinned group can be expanded within the current tab at any given time.
 - `ObservableCollection<Tab> Tabs`
 - `bool IsTabHeaderVisible` (Read-only): Automatically evaluated (`Tabs.Count > 1`). If `false`, the tab selection strip is completely hidden.
+- `ICommand ResetLayoutCommand` (Read-only): MVVM command that resets all groups to their default compiled XAML states.
 
 ### 2. Tab
 - Represents a collection of `FlexGroup` elements.

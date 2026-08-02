@@ -5,6 +5,7 @@ obj/
 ## Настройки IDE (VS Code и Rider)
 .vscode/
 .idea/
+.roo/
 *.suo
 *.user
 *.userosscache
