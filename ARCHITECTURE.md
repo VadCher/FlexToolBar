@@ -44,3 +44,53 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 - Elements matched via stable string identifiers: `ftb:Tab.TabId` and `ftb:FlexGroup.GroupId`.
 - Serializes only state primitives: `SelectedTabId`, `GroupId`, `IsExpanded`, `IsPinned`.
 - Layout Manager includes an implicit `ResetToDefault()` mechanism by falling back to compiled XAML defaults or deleting the local JSON state file.
+
+## Styling & Customization Guide (XAML)
+
+Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. Customization should be done via standard Avalonia `Style` selectors targeting specific template parts and pseudo-classes.
+
+### 1. FlexGroup Styling Spec
+`FlexGroup` switches between two structural visual representations inside its layout grid based on pseudo-classes.
+
+#### Visual States (Pseudo-classes)
+- `:expanded` — Active when `IsExpanded == true`. Renders the full control layout.
+- `:collapsed` — Active when `IsExpanded == false`. Renders the group as a single large action button.
+- `:pinned` — Active when `IsPinned == true`. Modifications apply to the pinning indicator state.
+
+#### Standard Template Parts (Targetable via XAML Name)
+- `PART_CollapsedButton` (`Button`) — The root container wrapper visible *only* in the `:collapsed` state.
+- `PART_ExpandedContainer` (`Border`) — The main outer border surrounding the entire group content *only* in the `:expanded` state. **Modify this border to add, change, or remove the group frame (BorderThickness, BorderBrush, CornerRadius).**
+- `PART_ManagementColumn` (`Panel/StackPanel`) — The vertical action strip on the left containing the Pin and Close buttons.
+- `PART_PinButton` (`ToggleButton`) — The pin/unpin interface element.
+- `PART_CloseButton` (`Button`) — The collapse/close action element.
+- `PART_BottomHeaderBlock` (`TextBlock`) — The text element rendering `ExpandedHeader` or `Header` at the bottom of the group.
+
+#### Customization Examples for End-Users (Avalonia UI)
+To remove the default border frame around all expanded groups globally:
+```xml
+<Style Selector="ftb|FlexGroup /template/ Border#PART_ExpandedContainer">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+</Style>
+```
+
+To change the hover background effect of the collapsed group button:
+```xml
+<Style Selector="ftb|FlexGroup:collapsed /template/ Button#PART_CollapsedButton:pointerover">
+    <Setter Property="Background" Value="{DynamicResource MyCustomHoverBrush}" />
+</Style>
+```
+
+### 2. Tab Styling Spec
+Hosts child `FlexGroup` containers horizontally.
+
+#### Standard Template Parts
+- `PART_TabScrollViewer` (`ScrollViewer`) — Encapsulates the items presenter. Handles horizontal layout overflow and mouse wheel scrolling interaction.
+- `PART_ItemsPresenter` (`ItemsPresenter`) — Arranges child `FlexGroup` controls.
+
+### 3. ToolBar (Root) Styling Spec
+Coordinates tabs and high-level behavioral layouts.
+
+#### Standard Template Parts
+- `PART_TabSelectionStrip` (`ListBox` or `TabStrip`) — The top horizontal strip displaying tab selection headers. Automatically bound to `IsTabHeaderVisible`.
+- `PART_ActiveContentPresenter` (`ContentPresenter`) — Hosts the visual content of the currently active tab.
