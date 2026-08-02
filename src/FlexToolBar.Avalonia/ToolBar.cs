@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Controls.Primitives;
 
@@ -25,11 +26,24 @@ public class ToolBar : TemplatedControl
             nameof(Tabs),
             defaultValue: new ObservableCollection<Tab>());
 
+    private static readonly DirectProperty<ToolBar, bool> IsTabHeaderVisibleProperty =
+        AvaloniaProperty.RegisterDirect<ToolBar, bool>(
+            nameof(IsTabHeaderVisible),
+            o => o.IsTabHeaderVisible);
+
+    private bool _isTabHeaderVisible;
+
+    static ToolBar()
+    {
+        TabsProperty.Changed.AddClassHandler<ToolBar>((x, e) => x.OnTabsChanged(e));
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ToolBar"/> class.
     /// </summary>
     public ToolBar()
     {
+        UpdateTabHeaderVisibility();
     }
 
     /// <summary>
@@ -48,5 +62,39 @@ public class ToolBar : TemplatedControl
     {
         get => GetValue(TabsProperty);
         set => SetValue(TabsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the tab header selection strip is visible.
+    /// </summary>
+    public bool IsTabHeaderVisible
+    {
+        get => _isTabHeaderVisible;
+        private set => SetAndRaise(IsTabHeaderVisibleProperty, ref _isTabHeaderVisible, value);
+    }
+
+    private void OnTabsChanged(AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.OldValue is ObservableCollection<Tab> oldCollection)
+        {
+            oldCollection.CollectionChanged -= OnTabsCollectionChanged;
+        }
+
+        if (e.NewValue is ObservableCollection<Tab> newCollection)
+        {
+            newCollection.CollectionChanged += OnTabsCollectionChanged;
+        }
+
+        UpdateTabHeaderVisibility();
+    }
+
+    private void OnTabsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        UpdateTabHeaderVisibility();
+    }
+
+    private void UpdateTabHeaderVisibility()
+    {
+        IsTabHeaderVisible = Tabs != null && Tabs.Count > 1;
     }
 }

@@ -1,0 +1,17 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:FlexToolBar.Avalonia">
+    
+    <Style Selector="local|Tab">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ScrollViewer x:Name="PART_TabScrollViewer"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <ItemsPresenter x:Name="PART_ItemsPresenter" />
+                </ScrollViewer>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+</Styles>
