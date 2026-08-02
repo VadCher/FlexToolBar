@@ -1,0 +1,79 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:FlexToolBar.Avalonia">
+    
+    <Style Selector="local|FlexGroup">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid>
+                    <!-- Collapsed State Button -->
+                    <Button x:Name="PART_CollapsedButton"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Background="Transparent"
+                            BorderThickness="0">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                            <ContentPresenter Content="{TemplateBinding Icon}"
+                                              HorizontalAlignment="Center" />
+                            <TextBlock Text="{TemplateBinding Header}"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Expanded State Container -->
+                    <Border x:Name="PART_ExpandedContainer"
+                            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="4">
+                        <Grid RowDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <!-- Left Management Column -->
+                                <StackPanel x:Name="PART_ManagementColumn"
+                                            Grid.Column="0"
+                                            Orientation="Vertical"
+                                            Spacing="2"
+                                            Margin="0,0,4,0">
+                                    <ToggleButton x:Name="PART_PinButton"
+                                                  IsChecked="{Binding IsPinned, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                  IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
+                                    <Button x:Name="PART_CloseButton" />
+                                </StackPanel>
+
+                                <!-- User Content -->
+                                <ContentPresenter Grid.Column="1"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}" />
+                            </Grid>
+
+                            <!-- Bottom Header Block -->
+                            <TextBlock x:Name="PART_BottomHeaderBlock"
+                                       Grid.Row="1"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,4,0,0"
+                                       Text="{Binding ExpandedHeader, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={Binding Header, RelativeSource={RelativeSource TemplatedParent}}}" />
+                        </Grid>
+                    </Border>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- State: Collapsed -->
+    <Style Selector="local|FlexGroup:collapsed /template/ Button#PART_CollapsedButton">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="local|FlexGroup:collapsed /template/ Border#PART_ExpandedContainer">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- State: Expanded -->
+    <Style Selector="local|FlexGroup:expanded /template/ Button#PART_CollapsedButton">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="local|FlexGroup:expanded /template/ Border#PART_ExpandedContainer">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+</Styles>
