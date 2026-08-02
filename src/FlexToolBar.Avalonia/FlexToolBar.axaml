@@ -2,8 +2,8 @@
         xmlns:x="http://microsoft.com">
     
     <!-- Link all component axaml resource templates together -->
-    <StyleInclude Source="avares://FlexToolBar.Avalonia/ToolBar.axaml" />
-    <StyleInclude Source="avares://FlexToolBar.Avalonia/Tab.axaml" />
-    <StyleInclude Source="avares://FlexToolBar.Avalonia/FlexGroup.axaml" />
+    <StyleInclude Source="avares://FlexToolBar.Avalonia/ToolBar.Styles.axaml" />
+    <StyleInclude Source="avares://FlexToolBar.Avalonia/Tab.Styles.axaml" />
+    <StyleInclude Source="avares://FlexToolBar.Avalonia/FlexGroup.Styles.axaml" />
     
 </Styles>
