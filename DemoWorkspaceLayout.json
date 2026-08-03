@@ -1,6 +1,6 @@
 {
   "selectedTabId": "",
-  "isSingleExpandMode": false,
+  "isSingleExpandMode": true,
   "groups": [
     {
       "groupId": "FileGroup",
@@ -9,17 +9,12 @@
     },
     {
       "groupId": "FontGroup",
-      "isExpanded": true,
+      "isExpanded": false,
       "isPinned": false
     },
     {
       "groupId": "ToolsGroup",
-      "isExpanded": true,
-      "isPinned": false
-    },
-    {
-      "groupId": "LayoutGroup",
-      "isExpanded": true,
+      "isExpanded": false,
       "isPinned": false
     }
   ]

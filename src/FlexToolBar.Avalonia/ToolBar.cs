@@ -39,6 +39,7 @@ public class ToolBar : TemplatedControl
             o => o.IsTabHeaderVisible);
 
     private bool _isTabHeaderVisible;
+    private bool _xamlDefaultIsSingleExpand = false; 
 
     static ToolBar()
     {
@@ -105,9 +106,13 @@ public class ToolBar : TemplatedControl
 
     public ICommand ResetLayoutCommand { get; }
 
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    /// <inheritdoc />
+    protected override void OnAttachedToVisualTree(global::Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+
+        // Cache the pure XAML default parameter safely on tree attachment
+        _xamlDefaultIsSingleExpand = IsSingleExpandGroup;
 
         if (!string.IsNullOrWhiteSpace(AutoSaveId))
         {
@@ -115,22 +120,34 @@ public class ToolBar : TemplatedControl
             if (_parentWindow != null)
             {
                 _parentWindow.Closing += OnParentWindowClosing;
-                
-                string filePath = GetTargetLayoutFilePath();
-                if (File.Exists(filePath))
-                {
-                    try
-                    {
-                        string json = File.ReadAllText(filePath);
-                        ApplyLayoutJson(json);
-                    }
-                    catch { /* Resilient bypass */ }
-                }
             }
         }
     }
 
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    /// <inheritdoc />
+    protected override void OnLoaded(global::Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+
+        // CRITICAL PHASE SEPARATION: Load from file ONLY after all child elements 
+        // have fully booted and safely cached their original XAML defaults.
+        if (!string.IsNullOrWhiteSpace(AutoSaveId))
+        {
+            string filePath = GetTargetLayoutFilePath();
+            if (File.Exists(filePath))
+            {
+                try
+                {
+                    string json = File.ReadAllText(filePath);
+                    ApplyLayoutJson(json);
+                }
+                catch { /* Resilient bypass */ }
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnDetachedFromVisualTree(global::Avalonia.VisualTreeAttachmentEventArgs e)
     {
         if (_parentWindow != null)
         {
@@ -249,9 +266,10 @@ public class ToolBar : TemplatedControl
                 File.Delete(filePath);
             }
         }
-        catch { }
+        catch { /* Protection */ }
 
-        IsSingleExpandGroup = false;
+        // SMART FALLBACK: Restoring the exact single expand configuration preserved from XAML
+        IsSingleExpandGroup = _xamlDefaultIsSingleExpand;
 
         foreach (var uiTab in Tabs)
         {
@@ -261,17 +279,8 @@ public class ToolBar : TemplatedControl
                 {
                     if (item is FlexGroup uiGroup)
                     {
-                        string groupId = FlexGroup.GetGroupId(uiGroup);
-                        if (groupId == "FileGroup")
-                        {
-                            uiGroup.IsExpanded = true;
-                            uiGroup.IsPinned = true;
-                        }
-                        else
-                        {
-                            uiGroup.IsExpanded = true;
-                            uiGroup.IsPinned = false;
-                        }
+                        uiGroup.IsExpanded = uiGroup.XamlDefaultIsExpanded;
+                        uiGroup.IsPinned = uiGroup.XamlDefaultIsPinned;
                     }
                 }
             }
