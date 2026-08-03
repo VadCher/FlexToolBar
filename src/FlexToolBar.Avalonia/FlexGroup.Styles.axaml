@@ -3,55 +3,86 @@
         xmlns:local="clr-namespace:FlexToolBar.Avalonia">
     
     <Style Selector="local|FlexGroup">
+        <Setter Property="Height" Value="95" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid>
-                    <!-- Collapsed State Button -->
+                    <!-- 1. Collapsed State: Large action button -->
                     <Button x:Name="PART_CollapsedButton"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch"
-                            Background="Transparent"
-                            BorderThickness="0">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
-                            <ContentPresenter Content="{TemplateBinding Icon}"
-                                              HorizontalAlignment="Center" />
-                            <TextBlock Text="{TemplateBinding Header}"
-                                       HorizontalAlignment="Center" />
-                        </StackPanel>
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Stretch"
+                            Background="#EAEAEA"
+                            BorderBrush="Gray"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="4"
+                            IsVisible="False">
+                        
+                        <Grid RowDefinitions="*,Auto">
+                            <ContentPresenter Grid.Row="0" Content="{TemplateBinding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Text="{TemplateBinding Header}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,2" FontSize="11" FontWeight="SemiBold"/>
+                        </Grid>
                     </Button>
 
-                    <!-- Expanded State Container -->
+                    <!-- 2. Expanded State: Monolithic Flat Grid layout -->
                     <Border x:Name="PART_ExpandedContainer"
-                            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            Background="#F9F9F9"
+                            BorderBrush="LightGray"
                             BorderThickness="1"
                             CornerRadius="4"
-                            Padding="4">
-                        <Grid RowDefinitions="*,Auto">
-                            <Grid ColumnDefinitions="Auto,*">
-                                <!-- Left Management Column -->
-                                <StackPanel x:Name="PART_ManagementColumn"
-                                            Grid.Column="0"
-                                            Orientation="Vertical"
-                                            Spacing="2"
-                                            Margin="0,0,4,0">
-                                    <ToggleButton x:Name="PART_PinButton"
-                                                  IsChecked="{Binding IsPinned, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
-                                                  IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
-                                    <Button x:Name="PART_CloseButton" />
-                                </StackPanel>
+                            Padding="6,4,6,2"
+                            IsVisible="True">
+                        
+                        <Grid RowDefinitions="*,Auto" ColumnDefinitions="Auto,*">
+                            
+                            <!-- [Row 0, Column 0]: Pin indicator button (Sized strictly 16x16) -->
+                            <ToggleButton x:Name="PART_PinButton"
+                                          Grid.Row="0" Grid.Column="0"
+                                          Content="🖈"
+                                          Width="16" Height="16"
+                                          Padding="0"
+                                          FontSize="10"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Top"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          HorizontalContentAlignment="Center"
+                                          VerticalContentAlignment="Center"
+                                          IsChecked="{Binding IsPinned, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                          IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
+                            
+                            <!-- [Row 1, Column 0]: Collapse close button (Sized strictly 16x16) -->
+                            <Button x:Name="PART_CloseButton" 
+                                    Grid.Row="1" Grid.Column="0"
+                                    Content="×" 
+                                    Width="16" Height="16"
+                                    Padding="0"
+                                    FontSize="12"
+                                    FontWeight="Bold"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Bottom"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"/>
 
-                                <!-- User Content -->
-                                <ContentPresenter Grid.Column="1"
-                                                  Content="{TemplateBinding Content}"
-                                                  ContentTemplate="{TemplateBinding ContentTemplate}" />
-                            </Grid>
+                            <!-- [Row 0, Column 1]: User custom XAML controls target area -->
+                            <ContentPresenter Grid.Row="0" Grid.Column="1"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              VerticalAlignment="Center"
+                                              Margin="6,0,0,0"/>
 
-                            <!-- Bottom Header Block -->
+                            <!-- [Row 1, Column 1]: Bottom header display label -->
                             <TextBlock x:Name="PART_BottomHeaderBlock"
-                                       Grid.Row="1"
+                                       Grid.Row="1" Grid.Column="1"
                                        HorizontalAlignment="Center"
-                                       Margin="0,4,0,0"
+                                       VerticalAlignment="Bottom"
+                                       Margin="0,2,0,2"
+                                       FontSize="10"
+                                       Foreground="Gray"
                                        Text="{Binding ExpandedHeader, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={Binding Header, RelativeSource={RelativeSource TemplatedParent}}}" />
                         </Grid>
                     </Border>
@@ -60,7 +91,7 @@
         </Setter>
     </Style>
 
-    <!-- State: Collapsed -->
+    <!-- State Layout Conditional Triggers Engine -->
     <Style Selector="local|FlexGroup:collapsed /template/ Button#PART_CollapsedButton">
         <Setter Property="IsVisible" Value="True" />
     </Style>
@@ -68,12 +99,15 @@
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
-    <!-- State: Expanded -->
     <Style Selector="local|FlexGroup:expanded /template/ Button#PART_CollapsedButton">
         <Setter Property="IsVisible" Value="False" />
     </Style>
     <Style Selector="local|FlexGroup:expanded /template/ Border#PART_ExpandedContainer">
         <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <!-- State: Pinned (Hide close button completely when group is pinned) -->
+    <Style Selector="local|FlexGroup:pinned /template/ Button#PART_CloseButton">
+        <Setter Property="IsVisible" Value="False" />
     </Style>
 
 </Styles>

@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls.Primitives;
+using Avalonia.LogicalTree;
 
 namespace FlexToolBar.Avalonia;
 
@@ -14,9 +16,7 @@ public class ToolBar : TemplatedControl
     /// Defines the <see cref="IsSingleExpandGroup"/> styled property.
     /// </summary>
     public static readonly StyledProperty<bool> IsSingleExpandGroupProperty =
-        AvaloniaProperty.Register<ToolBar, bool>(
-            nameof(IsSingleExpandGroup),
-            defaultValue: false);
+        AvaloniaProperty.Register<ToolBar, bool>(nameof(IsSingleExpandGroup), defaultValue: false);
 
     /// <summary>
     /// Defines the <see cref="Tabs"/> styled property.
@@ -36,6 +36,19 @@ public class ToolBar : TemplatedControl
     static ToolBar()
     {
         TabsProperty.Changed.AddClassHandler<ToolBar>((x, e) => x.OnTabsChanged(e));
+        
+        // Use LogicalAncestors instead of VisualAncestors to ensure parent tab is found immediately
+        FlexGroup.IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((group, e) =>
+        {
+            if (e.NewValue is true)
+            {
+                var toolBar = group.GetLogicalAncestors().OfType<ToolBar>().FirstOrDefault();
+                if (toolBar != null && toolBar.IsSingleExpandGroup)
+                {
+                    toolBar.CollapseSiblingGroups(group);
+                }
+            }
+        });
     }
 
     /// <summary>
@@ -96,5 +109,21 @@ public class ToolBar : TemplatedControl
     private void UpdateTabHeaderVisibility()
     {
         IsTabHeaderVisible = Tabs != null && Tabs.Count > 1;
+    }
+
+    private void CollapseSiblingGroups(FlexGroup activeGroup)
+    {
+        // Traverse using Logical Tree to find the owning Tab container instantly
+        var targetTab = activeGroup.GetLogicalAncestors().OfType<Tab>().FirstOrDefault();
+        if (targetTab == null) return;
+
+        // Iterate through logical child elements to collapse active dynamic siblings
+        foreach (var item in targetTab.Items)
+        {
+            if (item is FlexGroup sibling && sibling != activeGroup && !sibling.IsPinned)
+            {
+                sibling.IsExpanded = false;
+            }
+        }
     }
 }

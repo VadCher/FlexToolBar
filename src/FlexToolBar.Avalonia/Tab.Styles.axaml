@@ -3,12 +3,20 @@
         xmlns:local="clr-namespace:FlexToolBar.Avalonia">
     
     <Style Selector="local|Tab">
+        <!-- The missing magic: forces child FlexGroups to align horizontally -->
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="8" />
+            </ItemsPanelTemplate>
+        </Setter>
+        
         <Setter Property="Template">
             <ControlTemplate>
                 <ScrollViewer x:Name="PART_TabScrollViewer"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Disabled">
-                    <ItemsPresenter x:Name="PART_ItemsPresenter" />
+                    <ItemsPresenter x:Name="PART_ItemsPresenter" 
+                                    ItemsPanel="{TemplateBinding ItemsPanel}" />
                 </ScrollViewer>
             </ControlTemplate>
         </Setter>

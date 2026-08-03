@@ -10,15 +10,16 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 
 ## Core Architectural Rules & Pipeline
 1. **Separation of Concerns**: 
-   - `FlexToolBar.Core`: Pure C# layer (`net8.0;net9.0;net10.0`). Zero UI dependencies. Contains interfaces, state machine, and JSON DTOs.
-   - `FlexToolBar.Avalonia`: UI implementation layer (`Avalonia 12`). Contains custom controls, themes, and templating.
+   - `FlexToolBar.Core`: Pure C# layer. Zero UI dependencies. Contains interfaces, state machine, and JSON DTOs.
+   - `FlexToolBar.Avalonia`: UI implementation layer (`Avalonia 12`). Contains custom controls, themes, and templates.
 2. **Context & Hierarchy**: Standard `DataContext` inheritance is preserved. Elements within groups bind directly to the inherited or explicitly overwritten `DataContext` (e.g., active document from a docking system).
 3. **Internal Layout Freedom**: `FlexGroup` is a `ContentControl`. The inner layout (Grid, StackPanel, WrapPanel) is fully defined by the end-user in XAML.
+4. **Resource Names**: To prevent Avalonia 12 XAMLIL compiler conflicts with C# class types, all standalone control templates must use the `.Styles.axaml` file extension suffix.
 
 ## Component Specifications & Defaults
 
 ### 1. ToolBar (Root Control)
-- `bool IsSingleExpandGroup` (Default: `false`): If `true`, only one unpinned group can be expanded within the current tab at any given time.
+- `bool IsSingleExpandGroup` (Default: `false`): If `true`, only one unpinned group can be expanded within the current tab at any given time. Coordinates state changes via the Logical Tree.
 - `ObservableCollection<Tab> Tabs`
 - `bool IsTabHeaderVisible` (Read-only): Automatically evaluated (`Tabs.Count > 1`). If `false`, the tab selection strip is completely hidden.
 - `ICommand ResetLayoutCommand` (Read-only): MVVM command that resets all groups to their default compiled XAML states.
@@ -26,14 +27,16 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 ### 2. Tab
 - Represents a collection of `FlexGroup` elements.
 - Embedded `ScrollViewer` inside the Tab template handles horizontal overflow and responds to pointer mouse wheel scrolling (`PointerWheelChangedEvent`).
+- `ftb:Tab.TabId` (Attached Property): Unique string identifier for layout serialization.
 
 ### 3. FlexGroup (Smart Container)
 - Acts as a `ContentControl` switching between two main visual states via pseudo-classes:
   - `:collapsed` (`IsExpanded == false`): Rendered as a single large action button containing `Icon` (top) and `Header` (bottom). Clicking toggles `IsExpanded = true`.
-  - `:expanded` (`IsExpanded == true`): Hides the large button, displays a left-aligned vertical management column (Pin/Close buttons) and presents user `Content`.
+  - `:expanded` (`IsExpanded == true`): Hides the large button, presents user `Content`, and shows top-left pinning controls.
+- `ftb:FlexGroup.GroupId` (Attached Property): Unique string identifier for layout serialization.
 - **Properties & Defaults**:
-  - `IsExpanded` (Default: `true`)
-  - `IsPinned` (Default: `false`)
+  - `IsExpanded` (Default: `true`, TwoWay binding mode).
+  - `IsPinned` (Default: `false`): **When `IsPinned == true`, the group becomes non-collapsible. The close action must be completely ignored/suppressed in C#, and the `PART_CloseButton` must be hidden via XAML pseudo-classes.**
   - `PinVisible` (Default: `true`): Controls the visibility of the pin toggle button. If `PinVisible="False"` and `IsPinned="True"`, the group is statically locked and ignores `IsSingleExpandGroup` cycles.
 - **Headers Fallback Logic**:
   - `Header`: Display text for the collapsed button.
@@ -46,7 +49,6 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 - Layout Manager includes an implicit `ResetToDefault()` mechanism by falling back to compiled XAML defaults or deleting the local JSON state file.
 
 ## Styling & Customization Guide (XAML)
-
 Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. Customization should be done via standard Avalonia `Style` selectors targeting specific template parts and pseudo-classes.
 
 ### 1. FlexGroup Styling Spec
@@ -55,12 +57,11 @@ Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and fee
 #### Visual States (Pseudo-classes)
 - `:expanded` — Active when `IsExpanded == true`. Renders the full control layout.
 - `:collapsed` — Active when `IsExpanded == false`. Renders the group as a single large action button.
-- `:pinned` — Active when `IsPinned == true`. Modifications apply to the pinning indicator state.
+- `:pinned` — Active when `IsPinned == true`. Modifications apply to the pinning indicator state and hide close buttons.
 
 #### Standard Template Parts (Targetable via XAML Name)
 - `PART_CollapsedButton` (`Button`) — The root container wrapper visible *only* in the `:collapsed` state.
 - `PART_ExpandedContainer` (`Border`) — The main outer border surrounding the entire group content *only* in the `:expanded` state. **Modify this border to add, change, or remove the group frame (BorderThickness, BorderBrush, CornerRadius).**
-- `PART_ManagementColumn` (`Panel/StackPanel`) — The vertical action strip on the left containing the Pin and Close buttons.
 - `PART_PinButton` (`ToggleButton`) — The pin/unpin interface element.
 - `PART_CloseButton` (`Button`) — The collapse/close action element.
 - `PART_BottomHeaderBlock` (`TextBlock`) — The text element rendering `ExpandedHeader` or `Header` at the bottom of the group.
