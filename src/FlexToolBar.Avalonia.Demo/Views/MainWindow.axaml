@@ -63,6 +63,15 @@
                                 </ComboBox>
                             </StackPanel>
                         </ftb:FlexGroup>
+
+                        <!-- Tools Group: Second dynamic group to fully test IsSingleExpandGroup behavior -->
+                        <ftb:FlexGroup Header="Tools" ExpandedHeader="Utility Tools" ftb:FlexGroup.GroupId="ToolsGroup">
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="4">
+                                <Button Content="Zoom In"/>
+                                <Button Content="Zoom Out"/>
+                                <Button Content="Reset Zoom"/>
+                            </StackPanel>
+                        </ftb:FlexGroup>
                         
                     </ftb:Tab.Items>
                 </ftb:Tab>

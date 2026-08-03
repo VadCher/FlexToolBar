@@ -6,10 +6,22 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid RowDefinitions="Auto,*">
+                    
+                    <!-- Native TabStrip for clean ribbon header layout switching -->
                     <TabStrip x:Name="PART_TabSelectionStrip"
                               Grid.Row="0"
                               ItemsSource="{TemplateBinding Tabs}"
-                              IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}" />
+                              IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}"
+                              Background="Transparent">
+                        <!-- Formatting the Tab headers within the native TabStrip container -->
+                        <TabStrip.ItemTemplate>
+                            <DataTemplate x:DataType="local:Tab">
+                                <TextBlock Text="{Binding Header}" FontSize="12" FontWeight="SemiBold" Margin="4,2"/>
+                            </DataTemplate>
+                        </TabStrip.ItemTemplate>
+                    </TabStrip>
+                    
+                    <!-- Content Viewport dynamically displaying the active selected Tab content layout -->
                     <ContentPresenter x:Name="PART_ActiveContentPresenter"
                                       Grid.Row="1"
                                       Content="{Binding SelectedItem, ElementName=PART_TabSelectionStrip}" />

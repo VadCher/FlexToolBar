@@ -37,7 +37,16 @@ public class ToolBar : TemplatedControl
     {
         TabsProperty.Changed.AddClassHandler<ToolBar>((x, e) => x.OnTabsChanged(e));
         
-        // Use LogicalAncestors instead of VisualAncestors to ensure parent tab is found immediately
+        // Trigger 1: Force instant collapse of sibling groups when the single expand mode is turned on
+        IsSingleExpandGroupProperty.Changed.AddClassHandler<ToolBar>((toolBar, e) =>
+        {
+            if (e.NewValue is true)
+            {
+                toolBar.EnforceSingleExpandLayout();
+            }
+        });
+
+        // Trigger 2: Listen to IsExpanded changes on any FlexGroup within our UI hierarchy
         FlexGroup.IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((group, e) =>
         {
             if (e.NewValue is true)
@@ -56,6 +65,13 @@ public class ToolBar : TemplatedControl
     /// </summary>
     public ToolBar()
     {
+        // CRITICAL: Immediately subscribe to the default collection items changes 
+        // to detect tabs added via declarative XAML markup at startup
+        if (Tabs != null)
+        {
+            Tabs.CollectionChanged += OnTabsCollectionChanged;
+        }
+        
         UpdateTabHeaderVisibility();
     }
 
@@ -111,13 +127,35 @@ public class ToolBar : TemplatedControl
         IsTabHeaderVisible = Tabs != null && Tabs.Count > 1;
     }
 
+    private void EnforceSingleExpandLayout()
+    {
+        if (Tabs == null) return;
+
+        foreach (var tab in Tabs)
+        {
+            bool foundFirstDynamic = false;
+            foreach (var item in tab.Items)
+            {
+                if (item is FlexGroup group && !group.IsPinned)
+                {
+                    if (!foundFirstDynamic && group.IsExpanded)
+                    {
+                        foundFirstDynamic = true;
+                    }
+                    else
+                    {
+                        group.IsExpanded = false;
+                    }
+                }
+            }
+        }
+    }
+
     private void CollapseSiblingGroups(FlexGroup activeGroup)
     {
-        // Traverse using Logical Tree to find the owning Tab container instantly
         var targetTab = activeGroup.GetLogicalAncestors().OfType<Tab>().FirstOrDefault();
         if (targetTab == null) return;
 
-        // Iterate through logical child elements to collapse active dynamic siblings
         foreach (var item in targetTab.Items)
         {
             if (item is FlexGroup sibling && sibling != activeGroup && !sibling.IsPinned)
