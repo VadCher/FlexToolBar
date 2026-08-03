@@ -13,6 +13,24 @@
         <vm:MainViewModel/>
     </Design.DataContext>
 
+    <Window.Styles>
+        <!-- CUSTOMIZATION LESSON: How to make TabStrip headers tight and compact -->
+        <Style Selector="ftb|ToolBar TabStripItem">
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        
+        <!-- CUSTOMIZATION LESSON: Ensuring all groups match the highest content dynamically -->
+        <Style Selector="ftb|Tab">
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="ftb|FlexGroup">
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+    </Window.Styles>
+
     <DockPanel>
         <!-- Bottom control panel for demo interactivity -->
         <Border DockPanel.Dock="Bottom" Background="#F3F3F3" Padding="10" BorderThickness="1,0,0,0" BorderBrush="LightGray">
@@ -25,8 +43,8 @@
             </StackPanel>
         </Border>
 
-        <!-- Root hybrid toolbar instance configured via declarative XAML markup -->
-        <ftb:ToolBar DockPanel.Dock="Top" IsSingleExpandGroup="{Binding IsSingleExpandMode}">
+        <!-- Root hybrid toolbar with custom explicit height set by the application developer -->
+        <ftb:ToolBar DockPanel.Dock="Top" Height="90" IsSingleExpandGroup="{Binding IsSingleExpandMode}">
             <ftb:ToolBar.Tabs>
                 
                 <!-- Tab 1: Home Workspace -->

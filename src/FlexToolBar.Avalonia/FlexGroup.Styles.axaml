@@ -3,7 +3,6 @@
         xmlns:local="clr-namespace:FlexToolBar.Avalonia">
     
     <Style Selector="local|FlexGroup">
-        <Setter Property="Height" Value="95" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid>
