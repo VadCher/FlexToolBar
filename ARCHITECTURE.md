@@ -49,7 +49,9 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 - Layout Manager includes an implicit `ResetToDefault()` mechanism by falling back to compiled XAML defaults or deleting the local JSON state file.
 
 ## Styling & Customization Guide (XAML)
-Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. Customization should be done via standard Avalonia `Style` selectors targeting specific template parts and pseudo-classes.
+Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. The library intentionally does not enforce strict height constraints on `FlexGroup` or rigid paddings on `TabStripItem`. Sizing and spacing should be driven by the hosting application's styles (e.g., matching the highest content dynamically via `VerticalAlignment="Stretch"`).
+
+Customization should be done via standard Avalonia `Style` selectors targeting specific template parts and pseudo-classes.
 
 ### 1. FlexGroup Styling Spec
 `FlexGroup` switches between two structural visual representations inside its layout grid based on pseudo-classes.
