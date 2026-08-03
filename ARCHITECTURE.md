@@ -22,10 +22,11 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 - `bool IsSingleExpandGroup` (Default: `false`): If `true`, only one unpinned group can be expanded within the current tab at any given time. Coordinates state changes via the Logical Tree.
 - `ObservableCollection<Tab> Tabs`
 - `bool IsTabHeaderVisible` (Read-only): Automatically evaluated (`Tabs.Count > 1`). If `false`, the tab selection strip is completely hidden.
-- `ICommand ResetLayoutCommand` (Read-only): MVVM command that resets all groups to their default compiled XAML states.
+- `ICommand ResetLayoutCommand` (Read-only): **Autonomous library command. Deletes the physical JSON file from disk and forces all controls to gracefully fall back to their compiled XAML defaults without hardcoded states.**
+- `string? AutoSaveId` (Default: `null`): Unique configuration identifier for automated layout persistence. Enables complete zero-code operation.
 
 ### 2. Tab
-- Represents a collection of `FlexGroup` elements.
+- Represents a collection of `FlexGroup` elements. Inherits from `HeaderedItemsControl`.
 - Embedded `ScrollViewer` inside the Tab template handles horizontal overflow and responds to pointer mouse wheel scrolling (`PointerWheelChangedEvent`).
 - `ftb:Tab.TabId` (Attached Property): Unique string identifier for layout serialization.
 
@@ -36,64 +37,28 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 - `ftb:FlexGroup.GroupId` (Attached Property): Unique string identifier for layout serialization.
 - **Properties & Defaults**:
   - `IsExpanded` (Default: `true`, TwoWay binding mode).
-  - `IsPinned` (Default: `false`): **When `IsPinned == true`, the group becomes non-collapsible. The close action must be completely ignored/suppressed in C#, and the `PART_CloseButton` must be hidden via XAML pseudo-classes.**
-  - `PinVisible` (Default: `true`): Controls the visibility of the pin toggle button. If `PinVisible="False"` and `IsPinned="True"`, the group is statically locked and ignores `IsSingleExpandGroup` cycles.
+  - `IsPinned` (Default: `false`): When `IsPinned == true`, the group becomes non-collapsible. The close action is suppressed, and `PART_CloseButton` is hidden via XAML pseudo-classes.
+  - `PinVisible` (Default: `true`): Controls the visibility of the pin toggle button.
 - **Headers Fallback Logic**:
   - `Header`: Display text for the collapsed button.
   - `ExpandedHeader`: Display text for the bottom of the expanded panel. If null, automatically falls back to `Header`. If explicit empty string (`""`), the text block collapses (`IsVisible="False"`), saving vertical space.
 
-## Layout Serialization (JSON DTO)
-- No tracking of visual indices or drag-and-drop order. 
-- Elements matched via stable string identifiers: `ftb:Tab.TabId` and `ftb:FlexGroup.GroupId`.
-- Serializes only state primitives: `SelectedTabId`, `GroupId`, `IsExpanded`, `IsPinned`.
-- Layout Manager includes an implicit `ResetToDefault()` mechanism by falling back to compiled XAML defaults or deleting the local JSON state file.
+## Layout Lifecycle & Serialization (JSON DTO)
+1. **Phase Separation Engine**: During the control's boot phase (`OnAttachedToVisualTree`), all original XAML markup definitions are cached inside internal fields (`_xamlDefaultIsSingleExpand`, `_xamlDefaultIsExpanded`, etc.).
+2. **File Loading Sequence**: The configuration JSON file is applied strictly inside the **`OnLoaded`** method. This guarantees that file values safely override layout states without damaging or wiping the initial compiled XAML cache.
+3. **State Payload**: Matches elements via stable string identifiers (`TabId` and `GroupId`). Serializes only primitive state values: `SelectedTabId`, `IsSingleExpandMode`, `GroupId`, `IsExpanded`, `IsPinned`.
 
 ## Styling & Customization Guide (XAML)
-Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. The library intentionally does not enforce strict height constraints on `FlexGroup` or rigid paddings on `TabStripItem`. Sizing and spacing should be driven by the hosting application's styles (e.g., matching the highest content dynamically via `VerticalAlignment="Stretch"`).
+Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. The library intentionally does not enforce strict height constraints on `FlexGroup` or rigid paddings on `TabStripItem`. Sizing and spacing should be driven by the hosting application's styles.
 
-Customization should be done via standard Avalonia `Style` selectors targeting specific template parts and pseudo-classes.
-
-### 1. FlexGroup Styling Spec
-`FlexGroup` switches between two structural visual representations inside its layout grid based on pseudo-classes.
-
-#### Visual States (Pseudo-classes)
+### Visual States (Pseudo-classes)
 - `:expanded` — Active when `IsExpanded == true`. Renders the full control layout.
 - `:collapsed` — Active when `IsExpanded == false`. Renders the group as a single large action button.
 - `:pinned` — Active when `IsPinned == true`. Modifications apply to the pinning indicator state and hide close buttons.
 
-#### Standard Template Parts (Targetable via XAML Name)
-- `PART_CollapsedButton` (`Button`) — The root container wrapper visible *only* in the `:collapsed` state.
-- `PART_ExpandedContainer` (`Border`) — The main outer border surrounding the entire group content *only* in the `:expanded` state. **Modify this border to add, change, or remove the group frame (BorderThickness, BorderBrush, CornerRadius).**
-- `PART_PinButton` (`ToggleButton`) — The pin/unpin interface element.
-- `PART_CloseButton` (`Button`) — The collapse/close action element.
-- `PART_BottomHeaderBlock` (`TextBlock`) — The text element rendering `ExpandedHeader` or `Header` at the bottom of the group.
-
-#### Customization Examples for End-Users (Avalonia UI)
-To remove the default border frame around all expanded groups globally:
-```xml
-<Style Selector="ftb|FlexGroup /template/ Border#PART_ExpandedContainer">
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Background" Value="Transparent" />
-</Style>
-```
-
-To change the hover background effect of the collapsed group button:
-```xml
-<Style Selector="ftb|FlexGroup:collapsed /template/ Button#PART_CollapsedButton:pointerover">
-    <Setter Property="Background" Value="{DynamicResource MyCustomHoverBrush}" />
-</Style>
-```
-
-### 2. Tab Styling Spec
-Hosts child `FlexGroup` containers horizontally.
-
-#### Standard Template Parts
-- `PART_TabScrollViewer` (`ScrollViewer`) — Encapsulates the items presenter. Handles horizontal layout overflow and mouse wheel scrolling interaction.
-- `PART_ItemsPresenter` (`ItemsPresenter`) — Arranges child `FlexGroup` controls.
-
-### 3. ToolBar (Root) Styling Spec
-Coordinates tabs and high-level behavioral layouts.
-
-#### Standard Template Parts
-- `PART_TabSelectionStrip` (`ListBox` or `TabStrip`) — The top horizontal strip displaying tab selection headers. Automatically bound to `IsTabHeaderVisible`.
-- `PART_ActiveContentPresenter` (`ContentPresenter`) — Hosts the visual content of the currently active tab.
+### Standard Template Parts (Targetable via XAML Name)
+- `PART_CollapsedButton` (`Button`) — Root wrapper visible only in the `:collapsed` state.
+- `PART_ExpandedContainer` (`Border`) — Outer border surrounding content only in the `:expanded` state.
+- `PART_PinButton` (`ToggleButton`) — Pin/unpin interface element.
+- `PART_CloseButton` (`Button`) — Collapse/close action element.
+- `PART_BottomHeaderBlock` (`TextBlock`) — Renders `ExpandedHeader` at the bottom of the group.
