@@ -35,16 +35,23 @@
         <!-- Bottom control panel for demo interactivity -->
         <Border DockPanel.Dock="Bottom" Background="#F3F3F3" Padding="10" BorderThickness="1,0,0,0" BorderBrush="LightGray">
             <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+                
+                <!-- Zero code: bound TwoWay to ViewModel state -->
                 <CheckBox Content="Enable IsSingleExpandGroup" 
                           IsChecked="{Binding IsSingleExpandMode, Mode=TwoWay}"/>
+                
+                <!-- Zero code: executes the embedded library command directly by element name -->
                 <Button Content="Reset Layout (To Defaults)" 
-                        Command="{Binding ResetDemoLayoutCommand}"
+                        Command="{Binding #PART_DemoToolBar.ResetLayoutCommand}"
                         Padding="10,5" Background="LightGray"/>
             </StackPanel>
         </Border>
 
-        <!-- Root hybrid toolbar with custom explicit height set by the application developer -->
-        <ftb:ToolBar DockPanel.Dock="Top" Height="90" IsSingleExpandGroup="{Binding IsSingleExpandMode}">
+        <!-- Root hybrid toolbar with enabled zero-code automated layout serialization via ID -->
+        <ftb:ToolBar x:Name="PART_DemoToolBar"
+                     AutoSaveId="DemoWorkspaceLayout" 
+                     DockPanel.Dock="Top" 
+                     IsSingleExpandGroup="{Binding IsSingleExpandMode, Mode=TwoWay}">
             <ftb:ToolBar.Tabs>
                 
                 <!-- Tab 1: Home Workspace -->

@@ -1,30 +1,37 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
+using System.Windows.Input;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
+using FlexToolBar.Core;
 
 namespace FlexToolBar.Avalonia;
 
 /// <summary>
 /// Represents the root toolbar control hosting multiple tabs and managing group expansion behavior.
+/// Supports automated state serialization and factory resets out of the box.
 /// </summary>
 public class ToolBar : TemplatedControl
 {
-    /// <summary>
-    /// Defines the <see cref="IsSingleExpandGroup"/> styled property.
-    /// </summary>
+    private readonly FlexLayoutManager _coreLayoutManager = new();
+    private Window? _parentWindow;
+
     public static readonly StyledProperty<bool> IsSingleExpandGroupProperty =
         AvaloniaProperty.Register<ToolBar, bool>(nameof(IsSingleExpandGroup), defaultValue: false);
 
-    /// <summary>
-    /// Defines the <see cref="Tabs"/> styled property.
-    /// </summary>
     public static readonly StyledProperty<ObservableCollection<Tab>> TabsProperty =
         AvaloniaProperty.Register<ToolBar, ObservableCollection<Tab>>(
             nameof(Tabs),
             defaultValue: new ObservableCollection<Tab>());
+
+    public static readonly StyledProperty<string?> AutoSaveIdProperty =
+        AvaloniaProperty.Register<ToolBar, string?>(nameof(AutoSaveId), defaultValue: null);
 
     private static readonly DirectProperty<ToolBar, bool> IsTabHeaderVisibleProperty =
         AvaloniaProperty.RegisterDirect<ToolBar, bool>(
@@ -37,7 +44,6 @@ public class ToolBar : TemplatedControl
     {
         TabsProperty.Changed.AddClassHandler<ToolBar>((x, e) => x.OnTabsChanged(e));
         
-        // Trigger 1: Force instant collapse of sibling groups when the single expand mode is turned on
         IsSingleExpandGroupProperty.Changed.AddClassHandler<ToolBar>((toolBar, e) =>
         {
             if (e.NewValue is true)
@@ -46,7 +52,6 @@ public class ToolBar : TemplatedControl
             }
         });
 
-        // Trigger 2: Listen to IsExpanded changes on any FlexGroup within our UI hierarchy
         FlexGroup.IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((group, e) =>
         {
             if (e.NewValue is true)
@@ -65,41 +70,212 @@ public class ToolBar : TemplatedControl
     /// </summary>
     public ToolBar()
     {
-        // CRITICAL: Immediately subscribe to the default collection items changes 
-        // to detect tabs added via declarative XAML markup at startup
+        ResetLayoutCommand = new MiniRelayCommand(ResetToDefaultLayout);
+
         if (Tabs != null)
         {
             Tabs.CollectionChanged += OnTabsCollectionChanged;
         }
-        
         UpdateTabHeaderVisibility();
     }
 
-    /// <summary>
-    /// Gets or sets a value indicating whether only one unpinned group can be expanded at a time.
-    /// </summary>
     public bool IsSingleExpandGroup
     {
         get => GetValue(IsSingleExpandGroupProperty);
         set => SetValue(IsSingleExpandGroupProperty, value);
     }
 
-    /// <summary>
-    /// Gets or sets the collection of tabs hosted within the toolbar.
-    /// </summary>
     public ObservableCollection<Tab> Tabs
     {
         get => GetValue(TabsProperty);
         set => SetValue(TabsProperty, value);
     }
 
-    /// <summary>
-    /// Gets a value indicating whether the tab header selection strip is visible.
-    /// </summary>
+    public string? AutoSaveId
+    {
+        get => GetValue(AutoSaveIdProperty);
+        set => SetValue(AutoSaveIdProperty, value);
+    }
+
     public bool IsTabHeaderVisible
     {
         get => _isTabHeaderVisible;
         private set => SetAndRaise(IsTabHeaderVisibleProperty, ref _isTabHeaderVisible, value);
+    }
+
+    public ICommand ResetLayoutCommand { get; }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (!string.IsNullOrWhiteSpace(AutoSaveId))
+        {
+            _parentWindow = System.Linq.Enumerable.OfType<Window>(this.GetVisualAncestors()).FirstOrDefault();
+            if (_parentWindow != null)
+            {
+                _parentWindow.Closing += OnParentWindowClosing;
+                
+                string filePath = GetTargetLayoutFilePath();
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        string json = File.ReadAllText(filePath);
+                        ApplyLayoutJson(json);
+                    }
+                    catch { /* Resilient bypass */ }
+                }
+            }
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (_parentWindow != null)
+        {
+            _parentWindow.Closing -= OnParentWindowClosing;
+        }
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void OnParentWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(AutoSaveId)) return;
+
+        try
+        {
+            string json = GetLayoutJson();
+            string filePath = GetTargetLayoutFilePath();
+            File.WriteAllText(filePath, json);
+        }
+        catch { /* Resilient protection */ }
+    }
+
+    private string GetTargetLayoutFilePath()
+    {
+        string rootPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "work/FlexToolBar");
+        return Path.Combine(rootPath, $"{AutoSaveId}.json");
+    }
+    public string GetLayoutJson()
+    {
+        var coreModel = new FlexToolBarViewModel
+        {
+            IsSingleExpandGroup = IsSingleExpandGroup
+        };
+
+        foreach (var uiTab in Tabs)
+        {
+            string tabId = Tab.GetTabId(uiTab);
+            string tabHeader = uiTab.Header?.ToString() ?? string.Empty;
+
+            var coreTab = new FlexTabViewModel(tabId, tabHeader);
+
+            if (uiTab.Items != null)
+            {
+                foreach (var item in uiTab.Items)
+                {
+                    if (item is FlexGroup uiGroup)
+                    {
+                        string groupId = FlexGroup.GetGroupId(uiGroup);
+                        string groupHeader = uiGroup.Header;
+
+                        coreTab.Groups.Add(new FlexGroupViewModel(groupId, groupHeader)
+                        {
+                            IsExpanded = uiGroup.IsExpanded,
+                            IsPinned = uiGroup.IsPinned
+                        });
+                    }
+                }
+            }
+
+            coreModel.Tabs.Add(coreTab);
+        }
+
+        return _coreLayoutManager.SaveLayout(coreModel);
+    }
+
+    public void ApplyLayoutJson(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return;
+
+        try
+        {
+            var options = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            };
+
+            var state = System.Text.Json.JsonSerializer.Deserialize<FlexToolbarState>(json, options);
+            if (state == null) return;
+
+            IsSingleExpandGroup = state.IsSingleExpandMode;
+
+            if (state.Groups == null || !state.Groups.Any()) return;
+
+            var loadedGroups = state.Groups
+                .Where(g => !string.IsNullOrEmpty(g.GroupId))
+                .ToDictionary(g => g.GroupId, g => g);
+
+            foreach (var uiTab in Tabs)
+            {
+                if (uiTab.Items != null)
+                {
+                    foreach (var item in uiTab.Items)
+                    {
+                        if (item is FlexGroup uiGroup)
+                        {
+                            string groupId = FlexGroup.GetGroupId(uiGroup);
+                            if (loadedGroups.TryGetValue(groupId, out var savedState))
+                            {
+                                uiGroup.IsExpanded = savedState.IsExpanded;
+                                uiGroup.IsPinned = savedState.IsPinned;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception) { }
+    }
+
+    public void ResetToDefaultLayout()
+    {
+        try
+        {
+            string filePath = GetTargetLayoutFilePath();
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+        catch { }
+
+        IsSingleExpandGroup = false;
+
+        foreach (var uiTab in Tabs)
+        {
+            if (uiTab.Items != null)
+            {
+                foreach (var item in uiTab.Items)
+                {
+                    if (item is FlexGroup uiGroup)
+                    {
+                        string groupId = FlexGroup.GetGroupId(uiGroup);
+                        if (groupId == "FileGroup")
+                        {
+                            uiGroup.IsExpanded = true;
+                            uiGroup.IsPinned = true;
+                        }
+                        else
+                        {
+                            uiGroup.IsExpanded = true;
+                            uiGroup.IsPinned = false;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void OnTabsChanged(AvaloniaPropertyChangedEventArgs e)
@@ -119,6 +295,22 @@ public class ToolBar : TemplatedControl
 
     private void OnTabsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (e.OldItems != null)
+        {
+            foreach (var item in e.OldItems)
+            {
+                if (item is ILogical logicalItem) LogicalChildren.Remove(logicalItem);
+            }
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (var item in e.NewItems)
+            {
+                if (item is ILogical logicalItem) LogicalChildren.Add(logicalItem);
+            }
+        }
+
         UpdateTabHeaderVisibility();
     }
 
@@ -134,17 +326,20 @@ public class ToolBar : TemplatedControl
         foreach (var tab in Tabs)
         {
             bool foundFirstDynamic = false;
-            foreach (var item in tab.Items)
+            if (tab.Items != null)
             {
-                if (item is FlexGroup group && !group.IsPinned)
+                foreach (var item in tab.Items)
                 {
-                    if (!foundFirstDynamic && group.IsExpanded)
+                    if (item is FlexGroup group && !group.IsPinned)
                     {
-                        foundFirstDynamic = true;
-                    }
-                    else
-                    {
-                        group.IsExpanded = false;
+                        if (!foundFirstDynamic && group.IsExpanded)
+                        {
+                            foundFirstDynamic = true;
+                        }
+                        else
+                        {
+                            group.IsExpanded = false;
+                        }
                     }
                 }
             }
@@ -156,12 +351,24 @@ public class ToolBar : TemplatedControl
         var targetTab = activeGroup.GetLogicalAncestors().OfType<Tab>().FirstOrDefault();
         if (targetTab == null) return;
 
-        foreach (var item in targetTab.Items)
+        if (targetTab.Items != null)
         {
-            if (item is FlexGroup sibling && sibling != activeGroup && !sibling.IsPinned)
+            foreach (var item in targetTab.Items)
             {
-                sibling.IsExpanded = false;
+                if (item is FlexGroup sibling && sibling != activeGroup && !sibling.IsPinned)
+                {
+                    sibling.IsExpanded = false;
+                }
             }
         }
+    }
+
+    private class MiniRelayCommand : ICommand
+    {
+        private readonly Action _execute;
+        public MiniRelayCommand(Action execute) => _execute = execute;
+        public bool CanExecute(object? parameter) => true;
+        public void Execute(object? parameter) => _execute();
+        public event EventHandler? CanExecuteChanged { add { } remove { } }
     }
 }

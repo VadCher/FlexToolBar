@@ -1,0 +1,26 @@
+{
+  "selectedTabId": "",
+  "isSingleExpandMode": false,
+  "groups": [
+    {
+      "groupId": "FileGroup",
+      "isExpanded": true,
+      "isPinned": true
+    },
+    {
+      "groupId": "FontGroup",
+      "isExpanded": true,
+      "isPinned": false
+    },
+    {
+      "groupId": "ToolsGroup",
+      "isExpanded": true,
+      "isPinned": false
+    },
+    {
+      "groupId": "LayoutGroup",
+      "isExpanded": true,
+      "isPinned": false
+    }
+  ]
+}

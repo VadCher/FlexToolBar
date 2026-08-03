@@ -1,11 +1,16 @@
 using Avalonia.Controls;
 
-namespace FlexToolBar.Avalonia.Demo.Views;
-
-public partial class MainWindow : Window
+namespace FlexToolBar.Avalonia.Demo.Views
 {
-    public MainWindow()
+    /// <summary>
+    /// Interaction logic for MainWindow.axaml.
+    /// Pure presentation class decoupled from layout persistence operations.
+    /// </summary>
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
     }
 }
