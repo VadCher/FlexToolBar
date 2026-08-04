@@ -22,8 +22,9 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 - `bool IsSingleExpandGroup` (Default: `false`): If `true`, only one unpinned group can be expanded within the current tab at any given time. Coordinates state changes via the Logical Tree.
 - `ObservableCollection<Tab> Tabs`
 - `bool IsTabHeaderVisible` (Read-only): Automatically evaluated (`Tabs.Count > 1`). If `false`, the tab selection strip is completely hidden.
-- `ICommand ResetLayoutCommand` (Read-only): **Autonomous library command. Deletes the physical JSON file from disk and forces all controls to gracefully fall back to their compiled XAML defaults without hardcoded states.**
 - `string? AutoSaveId` (Default: `null`): Unique configuration identifier for automated layout persistence. Enables complete zero-code operation.
+- `ICommand ResetLayoutCommand` (Read-only): Autonomous library command. Deletes the physical JSON file from disk and forces all controls to gracefully fall back to their compiled XAML defaults without hardcoded states.
+- `void RefreshLayout()`: Public API method. Forces the toolbar to instantly re-read and apply configurations from the physical JSON layout file, enabling clean zero-code profile hot-swapping via file-system manipulation.
 
 ### 2. Tab
 - Represents a collection of `FlexGroup` elements. Inherits from `HeaderedItemsControl`.

@@ -124,26 +124,32 @@ public class ToolBar : TemplatedControl
         }
     }
 
+    /// <summary>
+    /// Forces the toolbar to instantly reload its configuration directly from the physical JSON file,
+    /// enabling dynamic runtime layout updates and external profile hot-swapping.
+    /// </summary>
+    public void RefreshLayout()
+    {
+        if (string.IsNullOrWhiteSpace(AutoSaveId)) return;
+
+        try
+        {
+            string filePath = GetTargetLayoutFilePath();
+            if (File.Exists(filePath))
+            {
+                string json = File.ReadAllText(filePath);
+                ApplyLayoutJson(json);
+            }
+        }
+        catch { /* Resilient runtime file access bypass */ }
+    }
+
     /// <inheritdoc />
     protected override void OnLoaded(global::Avalonia.Interactivity.RoutedEventArgs e)
     {
         base.OnLoaded(e);
 
-        // CRITICAL PHASE SEPARATION: Load from file ONLY after all child elements 
-        // have fully booted and safely cached their original XAML defaults.
-        if (!string.IsNullOrWhiteSpace(AutoSaveId))
-        {
-            string filePath = GetTargetLayoutFilePath();
-            if (File.Exists(filePath))
-            {
-                try
-                {
-                    string json = File.ReadAllText(filePath);
-                    ApplyLayoutJson(json);
-                }
-                catch { /* Resilient bypass */ }
-            }
-        }
+        RefreshLayout();
     }
 
     /// <inheritdoc />
@@ -171,9 +177,11 @@ public class ToolBar : TemplatedControl
 
     private string GetTargetLayoutFilePath()
     {
-        string rootPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "work/FlexToolBar");
+        // Automatically targets the exact directory containing the running executable/dll
+        string rootPath = AppDomain.CurrentDomain.BaseDirectory;
         return Path.Combine(rootPath, $"{AutoSaveId}.json");
     }
+    
     public string GetLayoutJson()
     {
         var coreModel = new FlexToolBarViewModel

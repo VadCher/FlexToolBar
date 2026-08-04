@@ -42,14 +42,14 @@
                 
                 <!-- Zero code: executes the embedded library command directly by element name -->
                 <Button Content="Reset Layout (To Defaults)" 
-                        Command="{Binding #PART_DemoToolBar.ResetLayoutCommand}"
+                        Command="{Binding #DemoToolBar.ResetLayoutCommand}"
                         Padding="10,5" Background="LightGray"/>
             </StackPanel>
         </Border>
 
         <!-- TEST: Turning the demo into a pure minimalist "anti-desktop" by default -->
         <!-- Fixed: Restored x:Name for XAML compiler Element-Name Binding resolution -->
-        <ftb:ToolBar x:Name="PART_DemoToolBar"
+        <ftb:ToolBar x:Name="DemoToolBar"
                      AutoSaveId="DemoWorkspaceLayout" 
                      DockPanel.Dock="Top" 
                      IsSingleExpandGroup="True">
