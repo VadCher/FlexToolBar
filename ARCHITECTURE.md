@@ -47,8 +47,12 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 
 ## Layout Lifecycle & Serialization (JSON DTO)
 1. **Phase Separation Engine**: During the control's boot phase (`OnAttachedToVisualTree`), all original XAML markup definitions are cached inside internal fields (`_xamlDefaultIsSingleExpand`, `_xamlDefaultIsExpanded`, etc.).
-2. **File Loading Sequence**: The configuration JSON file is applied strictly inside the **`OnLoaded`** method. This guarantees that file values safely override layout states without damaging or wiping the initial compiled XAML cache.
-3. **State Payload**: Matches elements via stable string identifiers (`TabId` and `GroupId`). Serializes only primitive state values: `SelectedTabId`, `IsSingleExpandMode`, `GroupId`, `IsExpanded`, `IsPinned`.
+2. **File Loading Sequence**: The configuration JSON file is applied strictly inside the **`OnLoaded`** method via `RefreshLayout()`. This guarantees that file values safely override layout states without damaging or wiping the initial compiled XAML cache.
+3. **Crash Resilience (Debounced Auto-Save)**: Built-in background serialization driven by a native `DispatcherTimer` running at `DispatcherPriority.Background`. 
+   - Activates automatically upon any runtime mutations of properties (`IsExpanded`, `IsPinned`, or active tab switches).
+   - Uses a strict **Debounce pattern** via `Stop()/Start()` sequence to group rapid user interaction cycles and minimize SSD write wear.
+   - Flushes state primitives to disk after a cooling interval defined by `AutoSaveInterval` (Default: 5 seconds). Setting this property to `TimeSpan.Zero` completely disables the background timer.
+4. **State Payload**: Matches elements via stable string identifiers (`TabId` and `GroupId`). Serializes only primitive state values: `SelectedTabId`, `IsSingleExpandMode`, `GroupId`, `IsExpanded`, `IsPinned`.
 
 ## Styling & Customization Guide (XAML)
 Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. The library intentionally does not enforce strict height constraints on `FlexGroup` or rigid paddings on `TabStripItem`. Sizing and spacing should be driven by the hosting application's styles.

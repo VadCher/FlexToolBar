@@ -8,17 +8,24 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
+using Avalonia.Threading; // Required for native DispatcherTimer execution
 using Avalonia.VisualTree;
 using FlexToolBar.Core;
 
 namespace FlexToolBar.Avalonia;
 
+/// <summary>
+/// Represents the root toolbar control hosting multiple tabs and managing group expansion behavior.
+/// Supports automated state serialization, factory resets, and lazy debounced auto-saving.
+/// </summary>
 public class ToolBar : TemplatedControl
 {
     private readonly FlexLayoutManager _coreLayoutManager = new();
+    private readonly DispatcherTimer _autoSaveTimer; // Lazy debounce background drive
     private Window? _parentWindow;
-    private TabStrip? _tabStrip; // Reference to apply loaded index directly
+    private TabStrip? _tabStrip;
     private bool _isInitialBoot = true;
+    private bool _xamlDefaultIsSingleExpand = false;
 
     public static readonly StyledProperty<bool> IsSingleExpandGroupProperty =
         AvaloniaProperty.Register<ToolBar, bool>(nameof(IsSingleExpandGroup), defaultValue: false);
@@ -31,9 +38,14 @@ public class ToolBar : TemplatedControl
     public static readonly StyledProperty<string?> AutoSaveIdProperty =
         AvaloniaProperty.Register<ToolBar, string?>(nameof(AutoSaveId), defaultValue: null);
 
-    // NEW PROPERTY: Controls whether the control restores the last active tab workspace
     public static readonly StyledProperty<bool> RestoreSelectedTabProperty =
         AvaloniaProperty.Register<ToolBar, bool>(nameof(RestoreSelectedTab), defaultValue: false);
+
+    // NEW STYLED PROPERTY: Controls the lazy background auto-save debounce delay window
+    public static readonly StyledProperty<TimeSpan> AutoSaveIntervalProperty =
+        AvaloniaProperty.Register<ToolBar, TimeSpan>(
+            nameof(AutoSaveInterval), 
+            defaultValue: TimeSpan.FromSeconds(5)); // Golden standard 5-second default window
 
     private static readonly DirectProperty<ToolBar, bool> IsTabHeaderVisibleProperty =
         AvaloniaProperty.RegisterDirect<ToolBar, bool>(
@@ -49,24 +61,42 @@ public class ToolBar : TemplatedControl
         IsSingleExpandGroupProperty.Changed.AddClassHandler<ToolBar>((toolBar, e) =>
         {
             if (e.NewValue is true) toolBar.EnforceSingleExpandLayout();
+            toolBar.RequestAutoSave(); // Request save when single expand mode shifts
         });
 
+        // Global interceptor for ANY group expansion property mutations within the system
         FlexGroup.IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((group, e) =>
         {
-            if (e.NewValue is true)
+            var toolBar = group.GetLogicalAncestors().OfType<ToolBar>().FirstOrDefault();
+            if (toolBar != null)
             {
-                var toolBar = group.GetLogicalAncestors().OfType<ToolBar>().FirstOrDefault();
-                if (toolBar != null && toolBar.IsSingleExpandGroup)
+                if (e.NewValue is true && toolBar.IsSingleExpandGroup)
                 {
                     toolBar.CollapseSiblingGroups(group);
                 }
+                toolBar.RequestAutoSave(); // Natively trigger the lazy save cooldown
             }
+        });
+
+        // Global interceptor for ANY group pin status property mutations within the system
+        FlexGroup.IsPinnedProperty.Changed.AddClassHandler<FlexGroup>((group, e) =>
+        {
+            var toolBar = group.GetLogicalAncestors().OfType<ToolBar>().FirstOrDefault();
+            toolBar?.RequestAutoSave(); // Natively trigger the lazy save cooldown
         });
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ToolBar"/> class.
+    /// </summary>
     public ToolBar()
     {
         ResetLayoutCommand = new MiniRelayCommand(ResetToDefaultLayout);
+
+        // 1. Initialize the native DispatcherTimer directly synchronized with the UI thread
+        _autoSaveTimer = new DispatcherTimer(DispatcherPriority.Background);
+        _autoSaveTimer.Tick += OnAutoSaveTimerTick;
+
         if (Tabs != null) Tabs.CollectionChanged += OnTabsCollectionChanged;
         UpdateTabHeaderVisibility();
     }
@@ -95,6 +125,12 @@ public class ToolBar : TemplatedControl
         set => SetValue(RestoreSelectedTabProperty, value);
     }
 
+    public TimeSpan AutoSaveInterval
+    {
+        get => GetValue(AutoSaveIntervalProperty);
+        set => SetValue(AutoSaveIntervalProperty, value);
+    }
+
     public bool IsTabHeaderVisible
     {
         get => _isTabHeaderVisible;
@@ -106,13 +142,23 @@ public class ToolBar : TemplatedControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        // Capture the internal TabStrip template part to alter active selections natively
         _tabStrip = e.NameScope.Find<TabStrip>("PART_TabSelectionStrip");
+        
+        // Listen to tab selection changes to trigger auto-save if tab tracking is requested
+        if (_tabStrip != null)
+        {
+            _tabStrip.SelectionChanged += (s, args) =>
+            {
+                if (RestoreSelectedTab) RequestAutoSave();
+            };
+        }
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        _xamlDefaultIsSingleExpand = IsSingleExpandGroup;
+
         if (!string.IsNullOrWhiteSpace(AutoSaveId))
         {
             _parentWindow = System.Linq.Enumerable.OfType<Window>(this.GetVisualAncestors()).FirstOrDefault();
@@ -129,20 +175,52 @@ public class ToolBar : TemplatedControl
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
+        _autoSaveTimer.Stop(); // Prevent background ticks if the control detaches from live UI
         if (_parentWindow != null) _parentWindow.Closing -= OnParentWindowClosing;
         base.OnDetachedFromVisualTree(e);
     }
 
     private void OnParentWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        _autoSaveTimer.Stop(); // Inhibit timer to bypass race conditions on app exit
+        TriggerLayoutSaveSequence();
+    }
+    /// <summary>
+    /// Requests a lazy background auto-save operation. 
+    /// Resets the countdown timer to achieve a clean debouncing effect.
+    /// </summary>
+    public void RequestAutoSave()
+    {
+        // 1. If the developer explicitly disabled the timer or AutoSaveId is blank, skip execution
+        if (AutoSaveInterval == TimeSpan.Zero || string.IsNullOrWhiteSpace(AutoSaveId) || _isInitialBoot)
+        {
+            return;
+        }
+
+        // 2. THE DEBOUNCE MAGIC: Stop and restart the timer to push the save window forward
+        _autoSaveTimer.Stop();
+        _autoSaveTimer.Interval = AutoSaveInterval;
+        _autoSaveTimer.Start();
+    }
+
+    private void OnAutoSaveTimerTick(object? sender, EventArgs e)
+    {
+        // 3. Stop the timer immediately so it doesn't loop, and flush data to disk
+        _autoSaveTimer.Stop();
+        TriggerLayoutSaveSequence();
+    }
+
+    private void TriggerLayoutSaveSequence()
+    {
         if (string.IsNullOrWhiteSpace(AutoSaveId)) return;
+
         try
         {
             string json = GetLayoutJson();
             string filePath = GetTargetLayoutFilePath();
             File.WriteAllText(filePath, json);
         }
-        catch { }
+        catch { /* Resilient file system blocks protection */ }
     }
 
     private string GetTargetLayoutFilePath()
@@ -165,9 +243,9 @@ public class ToolBar : TemplatedControl
         }
         catch { }
     }
+
     public string GetLayoutJson()
     {
-        // 1. Resolve currently active TabId dynamically from template part
         string activeTabId = string.Empty;
         if (_tabStrip != null && _tabStrip.SelectedItem is Tab selectedUiTab)
         {
@@ -176,7 +254,7 @@ public class ToolBar : TemplatedControl
 
         var coreModel = new FlexToolBarViewModel
         {
-            SelectedTabId = activeTabId, // Capture active workspace partition
+            SelectedTabId = activeTabId,
             IsSingleExpandGroup = IsSingleExpandGroup
         };
 
@@ -227,7 +305,6 @@ public class ToolBar : TemplatedControl
 
             IsSingleExpandGroup = state.IsSingleExpandMode;
 
-            // 2. RESTORE WORKSPACE FOCUS: Match and force the selected tab index natively if allowed
             if (RestoreSelectedTab && !string.IsNullOrWhiteSpace(state.SelectedTabId) && _tabStrip != null)
             {
                 var targetUiTab = Tabs.FirstOrDefault(t => Tab.GetTabId(t) == state.SelectedTabId);
@@ -274,9 +351,8 @@ public class ToolBar : TemplatedControl
         }
         catch { }
 
-        IsSingleExpandGroup = false;
+        IsSingleExpandGroup = _xamlDefaultIsSingleExpand;
 
-        // Reset workspace focus back to the very first tab on factory reset execution
         if (_tabStrip != null && Tabs.Any())
         {
             _tabStrip.SelectedIndex = 0;
