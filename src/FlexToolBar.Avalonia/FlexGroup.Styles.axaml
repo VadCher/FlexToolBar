@@ -16,7 +16,7 @@
                             BorderBrush="Gray"
                             BorderThickness="1"
                             CornerRadius="3"
-                            Padding="4"
+                            Padding="{TemplateBinding Padding}"
                             IsVisible="False">
                         
                         <Grid RowDefinitions="*,Auto">
@@ -31,7 +31,7 @@
                             BorderBrush="LightGray"
                             BorderThickness="1"
                             CornerRadius="4"
-                            Padding="6,4,6,2"
+                            Padding="{TemplateBinding Padding}"
                             IsVisible="True">
                         
                         <Grid RowDefinitions="*,Auto" ColumnDefinitions="Auto,*">
@@ -71,15 +71,13 @@
                             <ContentPresenter Grid.Row="0" Grid.Column="1"
                                               Content="{TemplateBinding Content}"
                                               ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              VerticalAlignment="Center"
-                                              Margin="6,0,0,0"/>
+                                              VerticalAlignment="Center"/>
 
                             <!-- [Row 1, Column 1]: Bottom header display label -->
                             <TextBlock x:Name="PART_BottomHeaderBlock"
                                        Grid.Row="1" Grid.Column="1"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Bottom"
-                                       Margin="0,2,0,2"
                                        FontSize="10"
                                        Foreground="Gray"
                                        Text="{Binding ExpandedHeader, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={Binding Header, RelativeSource={RelativeSource TemplatedParent}}}" />
@@ -104,7 +102,7 @@
     <Style Selector="local|FlexGroup:expanded /template/ Border#PART_ExpandedContainer">
         <Setter Property="IsVisible" Value="True" />
     </Style>
-    <!-- State: Pinned (Hide close button completely when group is pinned) -->
+    
     <Style Selector="local|FlexGroup:pinned /template/ Button#PART_CloseButton">
         <Setter Property="IsVisible" Value="False" />
     </Style>

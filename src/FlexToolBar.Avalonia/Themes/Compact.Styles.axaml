@@ -1,0 +1,40 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:FlexToolBar.Avalonia">
+    
+    <!-- COMPACT PRESET: Making TabStrip headers tight and pixel-perfect -->
+    <Style Selector="local|ToolBar TabStripItem">
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Padding" Value="10,2"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FontSize" Value="11"/>
+    </Style>
+    
+    <!-- COMPACT PRESET: Ensuring all groups stretch to match the highest content dynamically -->
+    <Style Selector="local|Tab">
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+    </Style>
+    
+    <Style Selector="local|FlexGroup">
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <!-- COMPACT PRESENTATION: Perfectly calculated rhythm for tight layouts -->
+        <Setter Property="Margin" Value="4,0,0,0"/>
+        <Setter Property="Padding" Value="4,2,4,2"/>
+    </Style>
+
+    <!-- COMPACT PRESET: Add the spacing directly to active control buttons inside the template -->
+    <Style Selector="local|FlexGroup /template/ ToggleButton#PART_PinButton">
+        <Setter Property="Margin" Value="0,0,4,0"/>
+    </Style>
+    
+    <Style Selector="local|FlexGroup /template/ Button#PART_CloseButton">
+        <Setter Property="Margin" Value="0,0,4,0"/>
+    </Style>
+
+    <!-- COMPACT PRESET: Control the vertical padding of the bottom group header block -->
+    <Style Selector="local|FlexGroup /template/ TextBlock#PART_BottomHeaderBlock">
+        <Setter Property="Margin" Value="0,2,0,1"/>
+    </Style>
+
+</Styles>

@@ -1,16 +1,19 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="FlexToolBar.Avalonia.Demo.App"
              xmlns:local="using:FlexToolBar.Avalonia.Demo"
+             x:Class="FlexToolBar.Avalonia.Demo.App"
              RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
-
+             
     <Application.DataTemplates>
         <local:ViewLocator />
     </Application.DataTemplates>
 
     <Application.Styles>
+        <!-- Standard bulletproof built-in theme -->
         <FluentTheme />
+        
+        <!-- Core library styles include link -->
         <StyleInclude Source="avares://FlexToolBar.Avalonia/FlexToolBar.axaml" />
+        <StyleInclude Source="avares://FlexToolBar.Avalonia/Themes/Compact.Styles.axaml" />
     </Application.Styles>
 </Application>
