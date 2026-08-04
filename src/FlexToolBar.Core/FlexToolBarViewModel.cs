@@ -41,6 +41,11 @@ internal class RelayCommand : ICommand
 /// </summary>
 public class FlexToolBarViewModel : ViewModelBase, IFlexToolBarViewModel
 {
+    /// <summary>
+    /// Gets or sets the identifier of the currently selected tab.
+    /// </summary>
+    public string SelectedTabId { get; set; } = string.Empty;
+
     private bool _isSingleExpandGroup;
     private readonly ObservableCollection<IFlexTabViewModel> _tabs = new();
 

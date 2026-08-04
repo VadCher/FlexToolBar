@@ -47,7 +47,8 @@ public class FlexLayoutManager
 
         var state = new FlexToolbarState
         {
-            IsSingleExpandMode = viewModel.IsSingleExpandGroup
+            IsSingleExpandMode = viewModel.IsSingleExpandGroup,
+            SelectedTabId = viewModel.SelectedTabId
         };
 
         foreach (var tab in viewModel.Tabs)
@@ -83,6 +84,8 @@ public class FlexLayoutManager
 
         if (state == null) return;
         
+        // RESTORE: Synchronize the selected tab identifier back to core view model
+        viewModel.SelectedTabId = state.SelectedTabId;
         viewModel.IsSingleExpandGroup = state.IsSingleExpandMode;
 
         if (state.Groups == null) return;

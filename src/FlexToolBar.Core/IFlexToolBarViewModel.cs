@@ -14,6 +14,11 @@ public interface IFlexToolBarViewModel
     bool IsSingleExpandGroup { get; set; }
 
     /// <summary>
+    /// Gets or sets the identifier of the currently selected tab.
+    /// </summary>
+    public string SelectedTabId { get; set; }
+
+    /// <summary>
     /// Gets the collection of available toolbar tabs.
     /// </summary>
     ObservableCollection<IFlexTabViewModel> Tabs { get; }

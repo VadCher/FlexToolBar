@@ -13,14 +13,12 @@ using FlexToolBar.Core;
 
 namespace FlexToolBar.Avalonia;
 
-/// <summary>
-/// Represents the root toolbar control hosting multiple tabs and managing group expansion behavior.
-/// Supports automated state serialization and factory resets out of the box.
-/// </summary>
 public class ToolBar : TemplatedControl
 {
     private readonly FlexLayoutManager _coreLayoutManager = new();
     private Window? _parentWindow;
+    private TabStrip? _tabStrip; // Reference to apply loaded index directly
+    private bool _isInitialBoot = true;
 
     public static readonly StyledProperty<bool> IsSingleExpandGroupProperty =
         AvaloniaProperty.Register<ToolBar, bool>(nameof(IsSingleExpandGroup), defaultValue: false);
@@ -33,13 +31,16 @@ public class ToolBar : TemplatedControl
     public static readonly StyledProperty<string?> AutoSaveIdProperty =
         AvaloniaProperty.Register<ToolBar, string?>(nameof(AutoSaveId), defaultValue: null);
 
+    // NEW PROPERTY: Controls whether the control restores the last active tab workspace
+    public static readonly StyledProperty<bool> RestoreSelectedTabProperty =
+        AvaloniaProperty.Register<ToolBar, bool>(nameof(RestoreSelectedTab), defaultValue: false);
+
     private static readonly DirectProperty<ToolBar, bool> IsTabHeaderVisibleProperty =
         AvaloniaProperty.RegisterDirect<ToolBar, bool>(
             nameof(IsTabHeaderVisible),
             o => o.IsTabHeaderVisible);
 
     private bool _isTabHeaderVisible;
-    private bool _xamlDefaultIsSingleExpand = false; 
 
     static ToolBar()
     {
@@ -47,10 +48,7 @@ public class ToolBar : TemplatedControl
         
         IsSingleExpandGroupProperty.Changed.AddClassHandler<ToolBar>((toolBar, e) =>
         {
-            if (e.NewValue is true)
-            {
-                toolBar.EnforceSingleExpandLayout();
-            }
+            if (e.NewValue is true) toolBar.EnforceSingleExpandLayout();
         });
 
         FlexGroup.IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((group, e) =>
@@ -66,17 +64,10 @@ public class ToolBar : TemplatedControl
         });
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ToolBar"/> class.
-    /// </summary>
     public ToolBar()
     {
         ResetLayoutCommand = new MiniRelayCommand(ResetToDefaultLayout);
-
-        if (Tabs != null)
-        {
-            Tabs.CollectionChanged += OnTabsCollectionChanged;
-        }
+        if (Tabs != null) Tabs.CollectionChanged += OnTabsCollectionChanged;
         UpdateTabHeaderVisibility();
     }
 
@@ -98,6 +89,12 @@ public class ToolBar : TemplatedControl
         set => SetValue(AutoSaveIdProperty, value);
     }
 
+    public bool RestoreSelectedTab
+    {
+        get => GetValue(RestoreSelectedTabProperty);
+        set => SetValue(RestoreSelectedTabProperty, value);
+    }
+
     public bool IsTabHeaderVisible
     {
         get => _isTabHeaderVisible;
@@ -106,32 +103,57 @@ public class ToolBar : TemplatedControl
 
     public ICommand ResetLayoutCommand { get; }
 
-    /// <inheritdoc />
-    protected override void OnAttachedToVisualTree(global::Avalonia.VisualTreeAttachmentEventArgs e)
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+        // Capture the internal TabStrip template part to alter active selections natively
+        _tabStrip = e.NameScope.Find<TabStrip>("PART_TabSelectionStrip");
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-
-        // Cache the pure XAML default parameter safely on tree attachment
-        _xamlDefaultIsSingleExpand = IsSingleExpandGroup;
-
         if (!string.IsNullOrWhiteSpace(AutoSaveId))
         {
             _parentWindow = System.Linq.Enumerable.OfType<Window>(this.GetVisualAncestors()).FirstOrDefault();
-            if (_parentWindow != null)
-            {
-                _parentWindow.Closing += OnParentWindowClosing;
-            }
+            if (_parentWindow != null) _parentWindow.Closing += OnParentWindowClosing;
         }
     }
 
-    /// <summary>
-    /// Forces the toolbar to instantly reload its configuration directly from the physical JSON file,
-    /// enabling dynamic runtime layout updates and external profile hot-swapping.
-    /// </summary>
+    protected override void OnLoaded(global::Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        RefreshLayout();
+        _isInitialBoot = false;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (_parentWindow != null) _parentWindow.Closing -= OnParentWindowClosing;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void OnParentWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(AutoSaveId)) return;
+        try
+        {
+            string json = GetLayoutJson();
+            string filePath = GetTargetLayoutFilePath();
+            File.WriteAllText(filePath, json);
+        }
+        catch { }
+    }
+
+    private string GetTargetLayoutFilePath()
+    {
+        string rootPath = AppDomain.CurrentDomain.BaseDirectory;
+        return Path.Combine(rootPath, $"{AutoSaveId}.json");
+    }
+
     public void RefreshLayout()
     {
         if (string.IsNullOrWhiteSpace(AutoSaveId)) return;
-
         try
         {
             string filePath = GetTargetLayoutFilePath();
@@ -141,51 +163,20 @@ public class ToolBar : TemplatedControl
                 ApplyLayoutJson(json);
             }
         }
-        catch { /* Resilient runtime file access bypass */ }
+        catch { }
     }
-
-    /// <inheritdoc />
-    protected override void OnLoaded(global::Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        base.OnLoaded(e);
-
-        RefreshLayout();
-    }
-
-    /// <inheritdoc />
-    protected override void OnDetachedFromVisualTree(global::Avalonia.VisualTreeAttachmentEventArgs e)
-    {
-        if (_parentWindow != null)
-        {
-            _parentWindow.Closing -= OnParentWindowClosing;
-        }
-        base.OnDetachedFromVisualTree(e);
-    }
-
-    private void OnParentWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(AutoSaveId)) return;
-
-        try
-        {
-            string json = GetLayoutJson();
-            string filePath = GetTargetLayoutFilePath();
-            File.WriteAllText(filePath, json);
-        }
-        catch { /* Resilient protection */ }
-    }
-
-    private string GetTargetLayoutFilePath()
-    {
-        // Automatically targets the exact directory containing the running executable/dll
-        string rootPath = AppDomain.CurrentDomain.BaseDirectory;
-        return Path.Combine(rootPath, $"{AutoSaveId}.json");
-    }
-    
     public string GetLayoutJson()
     {
+        // 1. Resolve currently active TabId dynamically from template part
+        string activeTabId = string.Empty;
+        if (_tabStrip != null && _tabStrip.SelectedItem is Tab selectedUiTab)
+        {
+            activeTabId = Tab.GetTabId(selectedUiTab);
+        }
+
         var coreModel = new FlexToolBarViewModel
         {
+            SelectedTabId = activeTabId, // Capture active workspace partition
             IsSingleExpandGroup = IsSingleExpandGroup
         };
 
@@ -236,6 +227,16 @@ public class ToolBar : TemplatedControl
 
             IsSingleExpandGroup = state.IsSingleExpandMode;
 
+            // 2. RESTORE WORKSPACE FOCUS: Match and force the selected tab index natively if allowed
+            if (RestoreSelectedTab && !string.IsNullOrWhiteSpace(state.SelectedTabId) && _tabStrip != null)
+            {
+                var targetUiTab = Tabs.FirstOrDefault(t => Tab.GetTabId(t) == state.SelectedTabId);
+                if (targetUiTab != null)
+                {
+                    _tabStrip.SelectedItem = targetUiTab;
+                }
+            }
+
             if (state.Groups == null || !state.Groups.Any()) return;
 
             var loadedGroups = state.Groups
@@ -269,15 +270,17 @@ public class ToolBar : TemplatedControl
         try
         {
             string filePath = GetTargetLayoutFilePath();
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
+            if (File.Exists(filePath)) File.Delete(filePath);
         }
-        catch { /* Protection */ }
+        catch { }
 
-        // SMART FALLBACK: Restoring the exact single expand configuration preserved from XAML
-        IsSingleExpandGroup = _xamlDefaultIsSingleExpand;
+        IsSingleExpandGroup = false;
+
+        // Reset workspace focus back to the very first tab on factory reset execution
+        if (_tabStrip != null && Tabs.Any())
+        {
+            _tabStrip.SelectedIndex = 0;
+        }
 
         foreach (var uiTab in Tabs)
         {
@@ -301,12 +304,10 @@ public class ToolBar : TemplatedControl
         {
             oldCollection.CollectionChanged -= OnTabsCollectionChanged;
         }
-
         if (e.NewValue is ObservableCollection<Tab> newCollection)
         {
             newCollection.CollectionChanged += OnTabsCollectionChanged;
         }
-
         UpdateTabHeaderVisibility();
     }
 
@@ -319,7 +320,6 @@ public class ToolBar : TemplatedControl
                 if (item is ILogical logicalItem) LogicalChildren.Remove(logicalItem);
             }
         }
-
         if (e.NewItems != null)
         {
             foreach (var item in e.NewItems)
@@ -327,7 +327,6 @@ public class ToolBar : TemplatedControl
                 if (item is ILogical logicalItem) LogicalChildren.Add(logicalItem);
             }
         }
-
         UpdateTabHeaderVisibility();
     }
 
@@ -339,7 +338,6 @@ public class ToolBar : TemplatedControl
     private void EnforceSingleExpandLayout()
     {
         if (Tabs == null) return;
-
         foreach (var tab in Tabs)
         {
             bool foundFirstDynamic = false;
@@ -349,14 +347,8 @@ public class ToolBar : TemplatedControl
                 {
                     if (item is FlexGroup group && !group.IsPinned)
                     {
-                        if (!foundFirstDynamic && group.IsExpanded)
-                        {
-                            foundFirstDynamic = true;
-                        }
-                        else
-                        {
-                            group.IsExpanded = false;
-                        }
+                        if (!foundFirstDynamic && group.IsExpanded) foundFirstDynamic = true;
+                        else group.IsExpanded = false;
                     }
                 }
             }

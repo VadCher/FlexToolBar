@@ -47,12 +47,12 @@
             </StackPanel>
         </Border>
 
-        <!-- TEST: Turning the demo into a pure minimalist "anti-desktop" by default -->
-        <!-- Fixed: Restored x:Name for XAML compiler Element-Name Binding resolution -->
+        <!-- Root hybrid toolbar with enabled zero-code automated layout serialization via ID -->
         <ftb:ToolBar x:Name="DemoToolBar"
                      AutoSaveId="DemoWorkspaceLayout" 
+                     RestoreSelectedTab="False"
                      DockPanel.Dock="Top" 
-                     IsSingleExpandGroup="True">
+                     IsSingleExpandGroup="{Binding IsSingleExpandMode, Mode=TwoWay}">
             <ftb:ToolBar.Tabs>
                 
                 <!-- Tab 1: Home Workspace -->
@@ -62,27 +62,55 @@
                         <!-- File Group: Statically pinned, non-collapsible container -->
                         <ftb:FlexGroup Header="File" IsPinned="True" PinVisible="False" ftb:FlexGroup.GroupId="FileGroup">
                             <StackPanel Orientation="Horizontal" Spacing="6" Margin="4">
-                                <Button Content="FileMenu" />
+                                <Button Content="FileMenu">
+                                    <Button.Flyout>
+                                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                            <MenuItem Header="New Project"/>
+                                            <MenuItem Header="Open File..."/>
+                                            <Separator/>
+                                            <MenuItem Header="Save Layout"/>
+                                            <MenuItem Header="Exit"/>
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
                                 <Button Content="QuickSave" Width="80"/>
                             </StackPanel>
                         </ftb:FlexGroup>
 
-                        <!-- Font Group: Starts collapsed by default -->
-                        <ftb:FlexGroup Header="Font" ExpandedHeader="Font Parameters" IsExpanded="False" ftb:FlexGroup.GroupId="FontGroup">
+                        <!-- Font Group: Dynamic layout group with header fallback -->
+                        <ftb:FlexGroup Header="Font" ExpandedHeader="Font Parameters" ftb:FlexGroup.GroupId="FontGroup">
                             <StackPanel Orientation="Horizontal" Spacing="6" Margin="4">
                                 <ToggleButton Content="B" FontWeight="Bold" Width="30"/>
                                 <ToggleButton Content="I" FontStyle="Italic" Width="30"/>
+                                <ComboBox SelectedIndex="0" Width="120">
+                                    <ComboBoxItem>Arial</ComboBoxItem>
+                                    <ComboBoxItem>Times New Roman</ComboBoxItem>
+                                    <ComboBoxItem>Segoe UI</ComboBoxItem>
+                                </ComboBox>
                             </StackPanel>
                         </ftb:FlexGroup>
 
-                        <!-- Tools Group: Starts collapsed by default -->
-                        <ftb:FlexGroup Header="Tools" ExpandedHeader="Utility Tools" IsExpanded="False" ftb:FlexGroup.GroupId="ToolsGroup">
+                        <!-- Tools Group: Second dynamic group to fully test IsSingleExpandGroup behavior -->
+                        <ftb:FlexGroup Header="Tools" ExpandedHeader="Utility Tools" ftb:FlexGroup.GroupId="ToolsGroup">
                             <StackPanel Orientation="Horizontal" Spacing="6" Margin="4">
                                 <Button Content="Zoom In"/>
                                 <Button Content="Zoom Out"/>
+                                <Button Content="Reset Zoom"/>
                             </StackPanel>
                         </ftb:FlexGroup>
                         
+                    </ftb:Tab.Items>
+                </ftb:Tab>
+
+                <!-- Tab 2: View Configurations -->
+                <ftb:Tab Header="View" ftb:Tab.TabId="ViewTab">
+                    <ftb:Tab.Items>
+                        <ftb:FlexGroup Header="Layout" ftb:FlexGroup.GroupId="LayoutGroup">
+                            <UniformGrid Rows="1" Margin="4">
+                                <RadioButton Content="Grid View" IsChecked="True" Margin="0,0,10,0"/>
+                                <RadioButton Content="List View"/>
+                            </UniformGrid>
+                        </ftb:FlexGroup>
                     </ftb:Tab.Items>
                 </ftb:Tab>
                 
