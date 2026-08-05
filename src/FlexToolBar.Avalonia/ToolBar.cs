@@ -27,6 +27,26 @@ public class ToolBar : TemplatedControl
     private bool _isInitialBoot = true;
     private bool _xamlDefaultIsSingleExpand = false;
 
+    /// <summary>
+    /// Defines the GroupSpacing attached property with visual tree inheritance enabled.
+    /// Drives the unified layout rhythm across arrows, tabs, and inner groups.
+    /// </summary>
+    public static readonly AttachedProperty<double> GroupSpacingProperty =
+        AvaloniaProperty.RegisterAttached<ToolBar, AvaloniaObject, double>(
+            "GroupSpacing",
+            6.0,
+            inherits: true); // The magic flag: leaks the value natively down the tree hierarchy
+
+    /// <summary>
+    /// Accessor for Attached Property GroupSpacing.
+    /// </summary>
+    public static double GetGroupSpacing(AvaloniaObject element) => element.GetValue(GroupSpacingProperty);
+
+    /// <summary>
+    /// Accessor for Attached Property GroupSpacing.
+    /// </summary>
+    public static void SetGroupSpacing(AvaloniaObject element, double value) => element.SetValue(GroupSpacingProperty, value);
+
     public static readonly StyledProperty<bool> IsSingleExpandGroupProperty =
         AvaloniaProperty.Register<ToolBar, bool>(nameof(IsSingleExpandGroup), defaultValue: false);
 
@@ -44,7 +64,7 @@ public class ToolBar : TemplatedControl
     // NEW STYLED PROPERTY: Controls the lazy background auto-save debounce delay window
     public static readonly StyledProperty<TimeSpan> AutoSaveIntervalProperty =
         AvaloniaProperty.Register<ToolBar, TimeSpan>(
-            nameof(AutoSaveInterval), 
+            nameof(AutoSaveInterval),
             defaultValue: TimeSpan.FromSeconds(5)); // Golden standard 5-second default window
 
     private static readonly DirectProperty<ToolBar, bool> IsTabHeaderVisibleProperty =
@@ -57,7 +77,7 @@ public class ToolBar : TemplatedControl
     static ToolBar()
     {
         TabsProperty.Changed.AddClassHandler<ToolBar>((x, e) => x.OnTabsChanged(e));
-        
+
         IsSingleExpandGroupProperty.Changed.AddClassHandler<ToolBar>((toolBar, e) =>
         {
             if (e.NewValue is true) toolBar.EnforceSingleExpandLayout();
@@ -139,20 +159,75 @@ public class ToolBar : TemplatedControl
 
     public ICommand ResetLayoutCommand { get; }
 
-    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
-    {
-        base.OnApplyTemplate(e);
-        _tabStrip = e.NameScope.Find<TabStrip>("PART_TabSelectionStrip");
-        
-        // Listen to tab selection changes to trigger auto-save if tab tracking is requested
-        if (_tabStrip != null)
+        private ScrollViewer? _scrollViewer;
+        private Button? _scrollLeftButton;
+        private Button? _scrollRightButton;
+
+        protected override void OnApplyTemplate(global::Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
         {
-            _tabStrip.SelectionChanged += (s, args) =>
+            base.OnApplyTemplate(e);
+            
+            // 1. Existing Tab Selection Engine
+            _tabStrip = e.NameScope.Find<TabStrip>("PART_TabSelectionStrip");
+
+            if (_tabStrip != null)
             {
-                if (RestoreSelectedTab) RequestAutoSave();
-            };
+                _tabStrip.SelectionChanged += (s, args) =>
+                {
+                    if (RestoreSelectedTab) RequestAutoSave();
+                };
+            }
+
+            // 2. New Global Touch Scroll Navigation Elements
+            _scrollViewer = e.NameScope.Find<ScrollViewer>("PART_TabScrollViewer");
+            _scrollLeftButton = e.NameScope.Find<Button>("PART_ScrollLeftButton");
+            _scrollRightButton = e.NameScope.Find<Button>("PART_ScrollRightButton");
+
+            if (_scrollViewer != null)
+            {
+                _scrollViewer.ScrollChanged += OnScrollViewerScrollChanged;
+            }
+
+            if (_scrollLeftButton != null) _scrollLeftButton.Click += OnScrollLeftClick;
+            if (_scrollRightButton != null) _scrollRightButton.Click += OnScrollRightClick;
         }
-    }
+
+        private void OnScrollViewerScrollChanged(object? sender, ScrollChangedEventArgs e)
+        {
+            if (_scrollViewer == null || _scrollLeftButton == null || _scrollRightButton == null) return;
+
+            double currentX = _scrollViewer.Offset.X;
+            double maxScrollableX = _scrollViewer.Extent.Width - _scrollViewer.Viewport.Width;
+
+            // Only present arrows if the structural content bounds exceed the actual window view viewport width
+            if (maxScrollableX <= 0)
+            {
+                _scrollLeftButton.IsVisible = false;
+                _scrollRightButton.IsVisible = false;
+                return;
+            }
+
+            // High-precision visibility state drive
+            _scrollLeftButton.IsVisible = currentX > 0.5;
+            _scrollRightButton.IsVisible = currentX < maxScrollableX - 0.5;
+        }
+
+        private void OnScrollRightClick(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (_scrollViewer == null) return;
+
+            // INSTANT RIGHT SNAP: Zero layout calculations. Safely shoot to the absolute end of the scroll track.
+            double maxScrollX = _scrollViewer.Extent.Width - _scrollViewer.Viewport.Width;
+            _scrollViewer.Offset = _scrollViewer.Offset.WithX(maxScrollX);
+        }
+
+        private void OnScrollLeftClick(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (_scrollViewer == null) return;
+
+            // INSTANT LEFT SNAP: Instantly restore the workspace back to the absolute beginning.
+            _scrollViewer.Offset = _scrollViewer.Offset.WithX(0);
+        }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {

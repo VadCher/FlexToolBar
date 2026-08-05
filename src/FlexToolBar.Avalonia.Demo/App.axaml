@@ -14,6 +14,6 @@
         
         <!-- Core library styles include link -->
         <StyleInclude Source="avares://FlexToolBar.Avalonia/FlexToolBar.axaml" />
-        <StyleInclude Source="avares://FlexToolBar.Avalonia/Themes/Compact.Styles.axaml" />
+        <!-- <StyleInclude Source="avares://FlexToolBar.Avalonia/Themes/Compact.Styles.axaml" /> -->
     </Application.Styles>
 </Application>

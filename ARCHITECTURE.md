@@ -19,18 +19,25 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 ## Component Specifications & Defaults
 
 ### 1. ToolBar (Root Control)
+- `double ToolBar.GroupSpacing` (Attached Property, Default: `6.0`): **The paramount layout controller of the entire library.** Registered with visual tree inheritance enabled (`inherits: true`). This single `double` value leaks down the entire tree hierarchy to drive the synchronized layout rhythm across arrows, tabs, and inner groups natively. Changing this single value scales the entire toolbar gaps proportionally.
 - `bool IsSingleExpandGroup` (Default: `false`): If `true`, only one unpinned group can be expanded within the current tab at any given time. Coordinates state changes via the Logical Tree.
 - `bool RestoreSelectedTab` (Default: `false`): Controls whether the toolbar restores the last active tab workspace on startup. If `false`, it always defaults to the first available XAML tab.
 - `ObservableCollection<Tab> Tabs`
 - `bool IsTabHeaderVisible` (Read-only): Automatically evaluated (`Tabs.Count > 1`). If `false`, the tab selection strip is completely hidden.
 - `ICommand ResetLayoutCommand` (Read-only): Autonomous library command. Deletes the physical JSON file from disk, resets `SelectedIndex` to 0, and forces all controls to gracefully fall back to their compiled XAML defaults via internal caching.
 - `string? AutoSaveId` (Default: `null`): Unique configuration identifier for automated layout persistence. Enables complete zero-code operation.
-- `void RefreshLayout()`: Public API method. Forces the toolbar to instantly re-read and apply configurations from the physical JSON layout file, enabling clean layout restoration and profile hot-swapping.
+- `void RefreshLayout()`: Public API method. Forces the toolbar to instantly re-read and apply configurations from the physical JSON layout file.
+- **Root Structural Framework (2-Row, 7-Column Grid)**: The global layout orchestration is managed strictly at the `ToolBar` template level to host paged navigation controls:
+  - `Row 0`: Hosts the global `TabStrip` (`PART_TabSelectionStrip`) seated in **Column 1** with `Grid.ColumnSpan="6"` to guarantee static, wobble-free tab header positioning.
+  - `Row 1`: Carries touch-friendly arrow buttons (`PART_ScrollLeftButton` in Col 1, `PART_ScrollRightButton` in Col 5), dynamic padding constraints (Cols 0 and 6), adjacent collapsible spacing borders (Cols 2 and 4), and the central `ScrollViewer` viewport (`PART_TabScrollViewer` in Col 3) wrapping the active tab presenter content.
 
 ### 2. Tab
 - Represents a collection of `FlexGroup` elements. Inherits from `HeaderedItemsControl`.
-- **Items Panel Rule**: The internal items presenter template uses a `StackPanel` with an absolute forced `Spacing="0"`. All visual spacing between groups is driven strictly by individual component margins defined inside themes.
-- Embedded `ScrollViewer` inside the Tab template handles horizontal overflow and responds to pointer mouse wheel scrolling (`PointerWheelChangedEvent`).
+- **Naked Content Carrier**: The `Tab` control is completely stripped of internal scroll containers, navigation arrow buttons, and outer layout framing metrics.
+- **Items Panel Rule**: The internal items presenter template uses a horizontal `StackPanel` where the item distance is driven strictly by our single inherited property:
+  ```xml
+  <StackPanel Orientation="Horizontal" Spacing="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
+  ```
 - `ftb:Tab.TabId` (Attached Property): Unique string identifier for layout serialization.
 
 ### 3. FlexGroup (Smart Container)
@@ -75,3 +82,7 @@ Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and fee
 - `PART_PinButton` (`ToggleButton`) — Pin/unpin interface element.
 - `PART_CloseButton` (`Button`) — Collapse/close action element.
 - `PART_BottomHeaderBlock` (`TextBlock`) — Renders `ExpandedHeader` at the bottom of the group.
+- `PART_TabSelectionStrip` (`TabStrip`) — Global tab switching bar located at the root ToolBar level.
+- `PART_TabScrollViewer` (`ScrollViewer`) — Global horizontal viewport framework carrying active presenters.
+- `PART_ScrollLeftButton` (`Button`) — Touch-friendly left navigation snap action element.
+- `PART_ScrollRightButton` (`Button`) — Touch-friendly right navigation snap action element.
