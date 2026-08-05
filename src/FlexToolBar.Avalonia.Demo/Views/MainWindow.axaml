@@ -1,12 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:FlexToolBar.Avalonia.Demo.ViewModels"
-        xmlns:ftb="clr-namespace:FlexToolBar.Avalonia;assembly=FlexToolBar.Avalonia"
+        xmlns:ftb="using:FlexToolBar.Avalonia"
         x:Class="FlexToolBar.Avalonia.Demo.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="FlexToolBar Demonstration App"
-        Width="800" Height="450"
+        Title="FlexToolBar - Professional Notepad Demo"
+        Width="850" Height="500"
         WindowStartupLocation="CenterScreen">
 
     <Design.DataContext>
@@ -14,97 +14,122 @@
     </Design.DataContext>
 
     <DockPanel>
-        <!-- Bottom control panel for demo interactivity -->
-        <Border DockPanel.Dock="Bottom" Background="#F3F3F3" Padding="10" BorderThickness="1,0,0,0" BorderBrush="LightGray">
-            <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+        <!-- Bottom control panel for system actions and tablet mode simulation -->
+        <Border DockPanel.Dock="Bottom" Background="#F3F3F3" Padding="10" BorderThickness="0,1,0,0" BorderBrush="LightGray">
+            <StackPanel Orientation="Horizontal" Spacing="25" HorizontalAlignment="Center">
                 
-                <!-- Zero code: bound TwoWay to ViewModel state -->
-                <CheckBox Content="Enable IsSingleExpandGroup" 
+                <!-- Tablet Mode Switcher (Toggles single expand accordion layout) -->
+                <CheckBox Content="Enable Tablet Mode (IsSingleExpandGroup)" 
                           IsChecked="{Binding IsSingleExpandMode, Mode=TwoWay}"/>
                 
-                <!-- Zero code: executes the embedded library command directly by element name -->
-                <Button Content="Reset Layout (To Defaults)" 
+                <!-- Factory Reset Button linked natively to library command -->
+                <Button Content="Reset Ribbon to Defaults" 
                         Command="{Binding #DemoToolBar.ResetLayoutCommand}"
-                        Padding="10,5" Background="LightGray"/>
+                        Padding="12,5" Background="LightGray"/>
             </StackPanel>
         </Border>
 
-        <!-- Root hybrid toolbar with enabled zero-code automated layout serialization via ID -->
+        <!-- Dynamic Ribbon ToolBar Context -->
         <ftb:ToolBar x:Name="DemoToolBar"
                      AutoSaveId="DemoWorkspaceLayout" 
-                     RestoreSelectedTab="False"
+                     RestoreSelectedTab="True"
                      DockPanel.Dock="Top" 
                      IsSingleExpandGroup="{Binding IsSingleExpandMode, Mode=TwoWay}">
             <ftb:ToolBar.Tabs>
                 
-                <!-- Tab 1: Home Workspace -->
+                <!-- TAB 1: HOME WORKSPACE -->
                 <ftb:Tab Header="Home" ftb:Tab.TabId="HomeTab">
                     <ftb:Tab.Items>
                         
-                        <!-- File Group: Statically pinned, non-collapsible container -->
+                        <!-- Group 1: File Operations (Statically Pinned) -->
                         <ftb:FlexGroup Header="File" IsPinned="True" PinVisible="False" ftb:FlexGroup.GroupId="FileGroup">
-                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="4">
-                                <Button Content="FileMenu">
-                                    <Button.Flyout>
-                                        <MenuFlyout Placement="BottomEdgeAlignedLeft">
-                                            <MenuItem Header="New Project"/>
-                                            <MenuItem Header="Open File..."/>
-                                            <Separator/>
-                                            <MenuItem Header="Save Layout"/>
-                                            <MenuItem Header="Exit"/>
-                                        </MenuFlyout>
-                                    </Button.Flyout>
-                                </Button>
-                                <Button Content="QuickSave" Width="80"/>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="2">
+                                <Button Content="📄 New" Padding="8,4"/>
+                                <Button Content="📂 Open" Padding="8,4"/>
+                                <Button Content="💾 Save" Padding="8,4"/>
                             </StackPanel>
                         </ftb:FlexGroup>
 
-                        <!-- Font Group: Dynamic layout group with header fallback -->
-                        <ftb:FlexGroup Header="Font" ExpandedHeader="Font Parameters" ftb:FlexGroup.GroupId="FontGroup">
-                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="4">
-                                <ToggleButton Content="B" FontWeight="Bold" Width="30"/>
-                                <ToggleButton Content="I" FontStyle="Italic" Width="30"/>
-                                <ComboBox SelectedIndex="0" Width="120">
+                        <!-- Group 2: Clipboard Actions -->
+                        <ftb:FlexGroup Header="Clipboard" ftb:FlexGroup.GroupId="ClipboardGroup">
+                            <StackPanel Orientation="Horizontal" Spacing="4" Margin="2">
+                                <Button Content="✂ Cut" Padding="6,4"/>
+                                <Button Content="📋 Copy" Padding="6,4"/>
+                                <Button Content="📥 Paste" Padding="6,4"/>
+                            </StackPanel>
+                        </ftb:FlexGroup>
+
+                        <!-- Group 3: Comprehensive Font Configurations -->
+                        <ftb:FlexGroup Header="Font" ExpandedHeader="Typography" ftb:FlexGroup.GroupId="FontGroup">
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,2">
+                                <!-- Font Family ComboBox Selection -->
+                                <ComboBox SelectedIndex="0" Width="130" Height="26" FontSize="11">
                                     <ComboBoxItem>Arial</ComboBoxItem>
                                     <ComboBoxItem>Times New Roman</ComboBoxItem>
+                                    <ComboBoxItem>Courier New</ComboBoxItem>
                                     <ComboBoxItem>Segoe UI</ComboBoxItem>
                                 </ComboBox>
+                                
+                                <!-- Font Size ComboBox Selection -->
+                                <ComboBox SelectedIndex="1" Width="55" Height="26" FontSize="11">
+                                    <ComboBoxItem>10</ComboBoxItem>
+                                    <ComboBoxItem>12</ComboBoxItem>
+                                    <ComboBoxItem>14</ComboBoxItem>
+                                    <ComboBoxItem>16</ComboBoxItem>
+                                    <ComboBoxItem>18</ComboBoxItem>
+                                </ComboBox>
+
+                                <!-- Text Style Toggles -->
+                                <!-- Text Style Toggles -->
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <ToggleButton Content="B" FontWeight="Bold" Width="26" Height="26" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                    <ToggleButton Content="I" FontStyle="Italic" Width="26" Height="26" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                    
+                                    <ToggleButton Width="26" Height="26" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                                        <TextBlock Text="U" TextDecorations="Underline"/>
+                                    </ToggleButton>
+                                </StackPanel>
                             </StackPanel>
                         </ftb:FlexGroup>
 
-                        <!-- Tools Group: Second dynamic group to fully test IsSingleExpandGroup behavior -->
-                        <ftb:FlexGroup Header="Tools" ExpandedHeader="Utility Tools" ftb:FlexGroup.GroupId="ToolsGroup">
-                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="4">
-                                <Button Content="Zoom In"/>
-                                <Button Content="Zoom Out"/>
-                                <Button Content="Reset Zoom"/>
+                        <!-- Group 4: Paragraph Alignment -->
+                        <ftb:FlexGroup Header="Paragraph" ftb:FlexGroup.GroupId="ParagraphGroup">
+                            <StackPanel Orientation="Horizontal" Spacing="3" Margin="2">
+                                <RadioButton Content="⇐ Left" IsChecked="True" GroupName="Align" CornerRadius="3" Padding="6,4"/>
+                                <RadioButton Content="⇔ Center" GroupName="Align" CornerRadius="3" Padding="6,4"/>
+                                <RadioButton Content="⇒ Right" GroupName="Align" CornerRadius="3" Padding="6,4"/>
                             </StackPanel>
                         </ftb:FlexGroup>
                         
                     </ftb:Tab.Items>
                 </ftb:Tab>
 
-                <!-- Tab 2: View Configurations -->
+                <!-- TAB 2: VIEW WORKSPACE -->
                 <ftb:Tab Header="View" ftb:Tab.TabId="ViewTab">
                     <ftb:Tab.Items>
-                        <ftb:FlexGroup Header="Layout" ftb:FlexGroup.GroupId="LayoutGroup">
-                            <UniformGrid Rows="1" Margin="4">
-                                <RadioButton Content="Grid View" IsChecked="True" Margin="0,0,10,0"/>
-                                <RadioButton Content="List View"/>
-                            </UniformGrid>
+                        
+                        <!-- Group 1: Page Zoom Configurations -->
+                        <ftb:FlexGroup Header="Zoom" ftb:FlexGroup.GroupId="ZoomGroup">
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="2">
+                                <Button Content="🔍 Enlarge" Padding="8,4"/>
+                                <Button Content="🔅 Shrink" Padding="8,4"/>
+                                <Button Content="100%" Padding="8,4"/>
+                            </StackPanel>
                         </ftb:FlexGroup>
+                        
                     </ftb:Tab.Items>
                 </ftb:Tab>
                 
             </ftb:ToolBar.Tabs>
         </ftb:ToolBar>
 
-        <!-- Main interactive content rendering viewport area -->
-        <Grid Background="White">
-            <TextBlock Text="Main Workspace Content Area" 
-                       HorizontalAlignment="Center" 
-                       VerticalAlignment="Center" 
-                       FontSize="16" Foreground="Gray"/>
-        </Grid>
+        <!-- Main Notepad Text Target Area filling the remaining workspace -->
+        <TextBox Watermark="Start typing your professional document here..."
+                 AcceptsReturn="True"
+                 AcceptsTab="True"
+                 BorderThickness="0"
+                 Padding="15"
+                 FontSize="14"
+                 Background="#FFFFFF"/>
     </DockPanel>
 </Window>

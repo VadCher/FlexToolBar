@@ -1,7 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:FlexToolBar.Avalonia">
-    
+   
     <!-- COMPACT PRESET: Making TabStrip headers tight and pixel-perfect -->
     <Style Selector="local|ToolBar TabStripItem">
         <Setter Property="MinHeight" Value="0"/>
@@ -18,18 +18,41 @@
     
     <Style Selector="local|FlexGroup">
         <Setter Property="VerticalAlignment" Value="Stretch"/>
-        <!-- COMPACT PRESENTATION: Perfectly calculated rhythm for tight layouts -->
         <Setter Property="Margin" Value="4,0,0,0"/>
         <Setter Property="Padding" Value="4,2,4,2"/>
     </Style>
 
-    <!-- COMPACT PRESET: Add the spacing directly to active control buttons inside the template -->
-    <Style Selector="local|FlexGroup /template/ ToggleButton#PART_PinButton">
+    <!-- COMPACT PRESET: Styling the Text-Based Pin Button natively -->
+    <Style Selector="local|FlexGroup:expanded /template/ Button#PART_PinButton">
         <Setter Property="Margin" Value="0,0,4,0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="#333333"/> <!-- Deep graphite contrast -->
+        <Setter Property="Width" Value="{Binding $self.Bounds.Height}"/>
+    </Style>
+
+    <!-- Reset the default Avalonia blue background when ToggleButton is Checked -->
+    <Style Selector="local|FlexGroup /template/ Button#PART_PinButton:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="Transparent"/>
+    </Style>
+
+    <!-- Dynamic swap: Turn text pin blue when pinned -->
+    <Style Selector="local|FlexGroup:pinned /template/ Button#PART_PinButton /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="#0078D4"/> <!-- Microsoft Accent Blue -->
+    </Style>
+
+    <!-- COMPACT PRESET: Styling the Text-Based Close Button natively -->
+    <Style Selector="local|FlexGroup:expanded /template/ Button#PART_CloseButton">
+        <Setter Property="Margin" Value="0,0,4,0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Height" Value="{Binding $parent[Grid].Children[0].Bounds.Height, x:CompileBindings=False}"/>
+        <Setter Property="Foreground" Value="#333333"/>
     </Style>
     
-    <Style Selector="local|FlexGroup /template/ Button#PART_CloseButton">
-        <Setter Property="Margin" Value="0,0,4,0"/>
+    <!-- Subtle hover feedback for close button -->
+    <Style Selector="local|FlexGroup /template/ Button#PART_CloseButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#EAEAEA"/>
+        <Setter Property="Foreground" Value="#D13438"/> <!-- Fluent Soft Red Hover Accent -->
     </Style>
 
     <!-- COMPACT PRESET: Control the vertical padding of the bottom group header block -->

@@ -109,6 +109,12 @@ namespace FlexToolBar.Avalonia
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
+            
+            var pinButton = e.NameScope.Find<Button>("PART_PinButton");
+            if (pinButton != null)
+            {
+                pinButton.Click += (s, args) => { IsPinned = !IsPinned; };
+            }
 
             var closeButton = e.NameScope.Find<Button>("PART_CloseButton");
             if (closeButton != null)

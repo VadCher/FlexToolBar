@@ -36,38 +36,35 @@
                         
                         <Grid RowDefinitions="*,Auto" ColumnDefinitions="Auto,*">
                             
-                            <!-- [Row 0, Column 0]: Pin indicator button (Sized strictly 16x16) -->
-                            <ToggleButton x:Name="PART_PinButton"
+                            <!-- [Row 0, Column 0]: Pin indicator button (Bulletproof text mode) -->
+                            <Button x:Name="PART_PinButton"
                                           Grid.Row="0" Grid.Column="0"
                                           Content="🖈"
-                                          Width="16" Height="16"
+                                          MinHeight="0"  MinWidth="0"
                                           Padding="0"
-                                          FontSize="10"
-                                          HorizontalAlignment="Left"
+                                          FontWeight="Normal"
+                                          HorizontalAlignment="Stretch"
                                           VerticalAlignment="Top"
                                           Background="Transparent"
                                           BorderThickness="0"
                                           HorizontalContentAlignment="Center"
                                           VerticalContentAlignment="Center"
-                                          IsChecked="{Binding IsPinned, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
                                           IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
                             
-                            <!-- [Row 1, Column 0]: Collapse close button (Sized strictly 16x16) -->
+                            <!-- [Row 1, Column 0]: Collapse close button (Bulletproof text mode) -->
                             <Button x:Name="PART_CloseButton" 
                                     Grid.Row="1" Grid.Column="0"
-                                    Content="×" 
-                                    Width="16" Height="16"
-                                    Padding="0"
-                                    FontSize="12"
-                                    FontWeight="Bold"
+                                    Content="&#x2A09;" 
+                                    Padding="0" MinHeight="0"  MinWidth="0"
+                                    FontWeight="Normal"
                                     Background="Transparent"
                                     BorderThickness="0"
-                                    HorizontalAlignment="Left"
+                                    HorizontalAlignment="Stretch"
                                     VerticalAlignment="Bottom"
                                     HorizontalContentAlignment="Center"
                                     VerticalContentAlignment="Center"/>
 
-                            <!-- [Row 0, Column 1]: User custom XAML controls target area -->
+                            <!-- [Row 0, Column 1]: Pure single binding for user controls only -->
                             <ContentPresenter Grid.Row="0" Grid.Column="1"
                                               Content="{TemplateBinding Content}"
                                               ContentTemplate="{TemplateBinding ContentTemplate}"
@@ -80,7 +77,8 @@
                                        VerticalAlignment="Bottom"
                                        FontSize="10"
                                        Foreground="Gray"
-                                       Text="{Binding ExpandedHeader, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={Binding Header, RelativeSource={RelativeSource TemplatedParent}}}" />
+                                       Text="{Binding ExpandedHeader, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={Binding Header, RelativeSource={RelativeSource TemplatedParent}}}"
+                                       IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         </Grid>
                     </Border>
                 </Grid>
@@ -106,5 +104,8 @@
     <Style Selector="local|FlexGroup:pinned /template/ Button#PART_CloseButton">
         <Setter Property="IsVisible" Value="False" />
     </Style>
+<Style Selector="local|FlexGroup:pinned /template/ Button#PART_PinButton /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="#0078D4"/>
+</Style>
 
 </Styles>
