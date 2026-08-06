@@ -8,6 +8,8 @@ namespace FlexToolBar.Core;
 /// </summary>
 public interface IFlexToolBarViewModel
 {
+    double GroupSpacing { get; set; }
+    string ActiveThemeName { get; set; }
     /// <summary>
     /// Gets or sets a value indicating whether only one group can be expanded at a time.
     /// </summary>

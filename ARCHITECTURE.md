@@ -27,9 +27,28 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 - `ICommand ResetLayoutCommand` (Read-only): Autonomous library command. Deletes the physical JSON file from disk, resets `SelectedIndex` to 0, and forces all controls to gracefully fall back to their compiled XAML defaults via internal caching.
 - `string? AutoSaveId` (Default: `null`): Unique configuration identifier for automated layout persistence. Enables complete zero-code operation.
 - `void RefreshLayout()`: Public API method. Forces the toolbar to instantly re-read and apply configurations from the physical JSON layout file.
-- **Root Structural Framework (2-Row, 7-Column Grid)**: The global layout orchestration is managed strictly at the `ToolBar` template level to host paged navigation controls:
-  - `Row 0`: Hosts the global `TabStrip` (`PART_TabSelectionStrip`) seated in **Column 1** with `Grid.ColumnSpan="6"` to guarantee static, wobble-free tab header positioning.
-  - `Row 1`: Carries touch-friendly arrow buttons (`PART_ScrollLeftButton` in Col 1, `PART_ScrollRightButton` in Col 5), dynamic padding constraints (Cols 0 and 6), adjacent collapsible spacing borders (Cols 2 and 4), and the central `ScrollViewer` viewport (`PART_TabScrollViewer` in Col 3) wrapping the active tab presenter content.
+- **Root Structural Framework (Nested Grid Infrastructure)**: The global layout orchestration is split into two logical layers inside the `ToolBar` template to cleanly isolate global tab definitions from active layout presentation spaces:
+  ```xml
+  <!-- Primary Structural Skeleton Frame -->
+  <Grid RowDefinitions="Auto,*" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+      <!-- Row 0: Hosts PART_HeaderContainer with the native TabStrip -->
+      <!-- Row 1: Hosts PART_ContentContainer wrapping the single-row navigation Grid -->
+  </Grid>
+  ```
+  * **Row 0 (Tab Header Workspace Layer):** Hosts `PART_HeaderContainer` (`Border`). This contains the global `TabStrip` navigation manager (`PART_TabSelectionStrip`) operating natively on a single flat surface. It provides static, wobble-free tab header positioning that never jitters or slides during content scrolling operations.
+  * **Row 1 (Active Ribbon Plate Layer):** Hosts `PART_ContentContainer` (`Border`). This border acts as the single styleable background and frame chassis for tool groups. Inside this container, a standalone single-row, 7-column layout engine coordinates touch navigation:
+    ```xml
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/> <!-- 0: Fixed Left Edge Application Padding -->
+        <ColumnDefinition Width="Auto"/> <!-- 1: Left Arrow Button Context -->
+        <ColumnDefinition Width="Auto"/> <!-- 2: Dynamic Inner Left Spacing Gap -->
+        <ColumnDefinition Width="*"/>    <!-- 3: Global Main Content Scroll Viewport -->
+        <ColumnDefinition Width="Auto"/> <!-- 4: Dynamic Inner Right Spacing Gap -->
+        <ColumnDefinition Width="Auto"/> <!-- 5: Right Arrow Button Context -->
+        <ColumnDefinition Width="Auto"/> <!-- 6: Fixed Right Edge Application Padding -->
+    </Grid.ColumnDefinitions>
+    ```
+    * **Column 3 Viewport Bounds:** The central `ScrollViewer` (`PART_TabScrollViewer`) and active `ContentPresenter` are cleanly isolated inside Column 3. When navigation arrow columns (Column 1 or 5) collapse to zero width, adjacent inner spacing gap borders (Column 2 or 4) reactively collapse as well, ensuring that the remaining tool items smoothly scale and float back to touch the respective outer padding lines symmetrically.
 
 ### 2. Tab
 - Represents a collection of `FlexGroup` elements. Inherits from `HeaderedItemsControl`.

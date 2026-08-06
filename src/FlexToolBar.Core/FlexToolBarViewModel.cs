@@ -46,7 +46,6 @@ public class FlexToolBarViewModel : ViewModelBase, IFlexToolBarViewModel
     /// </summary>
     public string SelectedTabId { get; set; } = string.Empty;
 
-    private bool _isSingleExpandGroup;
     private readonly ObservableCollection<IFlexTabViewModel> _tabs = new();
 
     /// <summary>
@@ -58,12 +57,23 @@ public class FlexToolBarViewModel : ViewModelBase, IFlexToolBarViewModel
         ResetLayoutCommand = new RelayCommand(ResetLayout);
     }
 
-    /// <inheritdoc />
+    public double GroupSpacing
+    {
+        get;
+        set => RaiseAndSetIfChanged(ref field, value);
+    } = 6.0;
+
     public bool IsSingleExpandGroup
     {
-        get => _isSingleExpandGroup;
-        set => SetProperty(ref _isSingleExpandGroup, value);
-    }
+        get;
+        set => RaiseAndSetIfChanged(ref field, value);
+    } = false;
+
+    public string ActiveThemeName
+    {
+        get;
+        set => RaiseAndSetIfChanged(ref field, value);
+    } = "Default";
 
     /// <inheritdoc />
     public ObservableCollection<IFlexTabViewModel> Tabs => _tabs;

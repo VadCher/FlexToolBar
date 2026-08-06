@@ -5,9 +5,6 @@ using System.Text.Json;
 
 namespace FlexToolBar.Core;
 
-/// <summary>
-/// Represents the state of a single toolbar group.
-/// </summary>
 public class FlexGroupState
 {
     public string GroupId { get; set; } = string.Empty;
@@ -15,18 +12,14 @@ public class FlexGroupState
     public bool IsPinned { get; set; }
 }
 
-/// <summary>
-/// Represents the overall layout state of the toolbar.
-/// </summary>
 public class FlexToolbarState
 {
+    public double GroupSpacing { get; set; } = 6.0;
+    public string ActiveThemeName { get; set; } = "Default";
     public string SelectedTabId { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// Gets or sets a value indicating whether single expansion mode is enabled.
-    /// </summary>
+
     public bool IsSingleExpandMode { get; set; }
-    
+
     public List<FlexGroupState> Groups { get; set; } = new();
 }
 
@@ -45,10 +38,13 @@ public class FlexLayoutManager
     {
         ArgumentNullException.ThrowIfNull(viewModel);
 
+        // SAVE: Persist global layout configurations directly alongside the item metrics
         var state = new FlexToolbarState
         {
             IsSingleExpandMode = viewModel.IsSingleExpandGroup,
-            SelectedTabId = viewModel.SelectedTabId
+            SelectedTabId = viewModel.SelectedTabId,
+            GroupSpacing = viewModel.GroupSpacing,
+            ActiveThemeName = viewModel.ActiveThemeName
         };
 
         foreach (var tab in viewModel.Tabs)
@@ -83,10 +79,12 @@ public class FlexLayoutManager
         catch (JsonException) { return; }
 
         if (state == null) return;
-        
-        // RESTORE: Synchronize the selected tab identifier back to core view model
+
+        // RESTORE: Synchronize the global states and themes back to core view model
         viewModel.SelectedTabId = state.SelectedTabId;
         viewModel.IsSingleExpandGroup = state.IsSingleExpandMode;
+        viewModel.GroupSpacing = state.GroupSpacing > 0 ? state.GroupSpacing : 6.0; // Secure boundary fallback
+        viewModel.ActiveThemeName = !string.IsNullOrEmpty(state.ActiveThemeName) ? state.ActiveThemeName : "Default";
 
         if (state.Groups == null) return;
 

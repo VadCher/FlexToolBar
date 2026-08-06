@@ -35,4 +35,15 @@ public abstract class ViewModelBase : INotifyPropertyChanged
         OnPropertyChanged(propertyName);
         return true;
     }
+    /// <summary>
+    /// Sets the property value and raises PropertyChanged if the value has changed.
+    /// </summary>
+    protected virtual bool RaiseAndSetIfChanged<T>(ref T backingField, T newValue, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(backingField, newValue)) return false;
+        backingField = newValue;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
+
 }

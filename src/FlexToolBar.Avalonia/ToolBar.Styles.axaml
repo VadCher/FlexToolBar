@@ -3,99 +3,163 @@
         xmlns:local="clr-namespace:FlexToolBar.Avalonia">
     
     <Style Selector="local|ToolBar">
+        <!-- Default core background and frame for the entire global ribbon control -->
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        
         <Setter Property="Template">
             <ControlTemplate>
-                <!-- 2-Row, 7-Column Master Grid by Vadim's Blueprint -->
-                <Grid RowDefinitions="Auto,*" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/> <!-- 0: Fixed Left Edge Padding -->
-                        <ColumnDefinition Width="Auto"/> <!-- 1: Left Arrow Button & Tab Headers anchor -->
-                        <ColumnDefinition Width="Auto"/> <!-- 2: Dynamic Inner Left Gap -->
-                        <ColumnDefinition Width="*"/>    <!-- 3: Main Content Box Framework -->
-                        <ColumnDefinition Width="Auto"/> <!-- 4: Dynamic Inner Right Gap -->
-                        <ColumnDefinition Width="Auto"/> <!-- 5: Right Arrow Button -->
-                        <ColumnDefinition Width="Auto"/> <!-- 6: Fixed Right Edge Padding -->
-                    </Grid.ColumnDefinitions>
+                <!-- 1. GLOBAL MONOLITHIC CONTROLLER: Root layout wrapper container -->
+                <Border x:Name="PART_RootContainer"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}"
+                        VerticalAlignment="Stretch" 
+                        HorizontalAlignment="Stretch">
                     
-                    <!-- ================================================================= -->
-                    <!-- ROW 0: TAB STRIP HEADERS PANEL                                    -->
-                    <!-- Seated directly in Col 1 to stay aligned with the scroll layout   -->
-                    <!-- ================================================================= -->
-                    <TabStrip x:Name="PART_TabSelectionStrip"
-                              Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="6"
-                              ItemsSource="{TemplateBinding Tabs}"
-                              IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}"
-                              Padding="0"
-                              Margin="0"
-                              Background="Transparent">
-                        <TabStrip.ItemTemplate>
-                            <DataTemplate x:DataType="local:Tab">
-                                <TextBlock Text="{Binding Header}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </DataTemplate>
-                        </TabStrip.ItemTemplate>
-                    </TabStrip>
-                    
-                    <!-- ================================================================= -->
-                    <!-- ROW 1: ACTIVE RIBBON CONTENT & TOUCH NAVIGATION CONTROLS          -->
-                    <!-- ================================================================= -->
-                    
-                    <!-- [Row 1, Col 0]: Fixed Left app margin linked to inherited spacing property -->
-                    <Border Grid.Row="1" Grid.Column="0" 
-                            Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
+                    <!-- TWO-ROW OUTER GRID: Separates headers and active workspaces completely -->
+                    <Grid RowDefinitions="Auto,*">
+                        
+                        <!-- ================================================================= -->
+                        <!-- ROW 0: TAB STRIP HEADERS BORDER FRAME                             -->
+                        <!-- Pure single-layer container for wobble-free tab selection rails -->
+                        <!-- ================================================================= -->
+                        <Border x:Name="PART_HeaderContainer"
+                                Grid.Row="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center">
+                            
+                            <TabStrip x:Name="PART_TabSelectionStrip"
+                                      ItemsSource="{TemplateBinding Tabs}"
+                                      IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Padding="0"
+                                      Margin="0"
+                                      Background="Transparent">
+                                <TabStrip.ItemTemplate>
+                                    <DataTemplate x:DataType="local:Tab">
+                                        <TextBlock Text="{Binding Header}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </TabStrip.ItemTemplate>
+                            </TabStrip>
+                        </Border>
+                        
+                        <!-- ================================================================= -->
+                        <!-- ROW 1: ACTIVE RIBBON CONTENT BORDER FRAME                         -->
+                        <!-- This Border acts as the single styleable chassis for tool groups  -->
+                        <!-- ================================================================= -->
+                        <Border x:Name="PART_ContentContainer"
+                                Grid.Row="1"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch">
+                            
+                            <!-- Pure single-row, 7-column layout engine -->
+                            <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/> <!-- 0: Fixed Left Edge Padding -->
+                                    <ColumnDefinition Width="Auto"/> <!-- 1: Left Arrow Button -->
+                                    <ColumnDefinition Width="Auto"/> <!-- 2: Dynamic Inner Left Gap -->
+                                    <ColumnDefinition Width="*"/>    <!-- 3: Core ScrollViewer Content Box -->
+                                    <ColumnDefinition Width="Auto"/> <!-- 4: Dynamic Inner Right Gap -->
+                                    <ColumnDefinition Width="Auto"/> <!-- 5: Right Arrow Button -->
+                                    <ColumnDefinition Width="Auto"/> <!-- 6: Fixed Right Edge Padding -->
+                                </Grid.ColumnDefinitions>
 
-                    <!-- [Row 1, Col 1]: Left Scroll Action Button (Width is now dynamic Auto-size) -->
-                    <Button x:Name="PART_ScrollLeftButton"
-                            Grid.Row="1" Grid.Column="1"
-                            Content="{TemplateBinding ScrollLeftContent}"
-                            VerticalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            IsVisible="False"/>
+                                <!-- [Col 0]: Fixed Left app margin linked to inherited spacing property -->
+                                <Border Grid.Column="0" 
+                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
 
-                    <!-- [Row 1, Col 2]: Inner Left Gap - collapses to 0 when arrow is hidden -->
-                    <Border Grid.Row="1" Grid.Column="2" 
-                            Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
-                            IsVisible="{Binding #PART_ScrollLeftButton.IsVisible}"/>
+                                <!-- [Col 1]: Left Scroll Action Button -->
+                                <Button x:Name="PART_ScrollLeftButton"
+                                        Grid.Column="1"
+                                        Content="{TemplateBinding ScrollLeftContent}"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        IsVisible="False"/>
 
-                    <!-- [Row 1, Col 3]: Global Scroll Viewport carrying active presenters -->
-                    <ScrollViewer x:Name="PART_TabScrollViewer"
-                                  Grid.Row="1" Grid.Column="3"
-                                  HorizontalScrollBarVisibility="Hidden"
-                                  VerticalScrollBarVisibility="Disabled"
-                                  VerticalAlignment="Stretch">
-                        <ContentPresenter x:Name="PART_ActiveContentPresenter"
-                                          Content="{Binding SelectedItem, ElementName=PART_TabSelectionStrip}"
-                                          VerticalAlignment="Stretch"/>
-                    </ScrollViewer>
-                    
-                    <!-- [Row 1, Col 4]: Inner Right Gap - collapses to 0 when arrow is hidden -->
-                    <Border Grid.Row="1" Grid.Column="4" 
-                            Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
-                            IsVisible="{Binding #PART_ScrollRightButton.IsVisible}"/>
+                                <!-- [Col 2]: Inner Left Gap - collapses to 0 when arrow is hidden -->
+                                <Border Grid.Column="2" 
+                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
+                                        IsVisible="{Binding #PART_ScrollLeftButton.IsVisible}"/>
 
-                    <!-- [Row 1, Col 5]: Right Scroll Action Button (Width is now dynamic Auto-size) -->
-                    <Button x:Name="PART_ScrollRightButton"
-                            Grid.Row="1" Grid.Column="5"
-                            Content="{TemplateBinding ScrollRightContent}"
-                            VerticalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center"
-                            IsVisible="False"/>
+                                <!-- [Col 3]: Global Scroll Viewport carrying active presenters -->
+                                <ScrollViewer x:Name="PART_TabScrollViewer"
+                                              Grid.Column="3"
+                                              HorizontalScrollBarVisibility="Hidden"
+                                              VerticalScrollBarVisibility="Disabled"
+                                              VerticalAlignment="Stretch">
+                                    <ContentPresenter x:Name="PART_ActiveContentPresenter"
+                                                      Content="{Binding SelectedItem, ElementName=PART_TabSelectionStrip}"
+                                                      VerticalAlignment="Stretch"/>
+                                </ScrollViewer>
+                                
+                                <!-- [Col 4]: Inner Right Gap - collapses to 0 when arrow is hidden -->
+                                <Border Grid.Column="4" 
+                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
+                                        IsVisible="{Binding #PART_ScrollRightButton.IsVisible}"/>
 
-                    <!-- [Row 1, Col 6]: Fixed Right app margin linked to inherited spacing property -->
-                    <Border Grid.Row="1" Grid.Column="6" 
-                            Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
-                </Grid>
+                                <!-- [Col 5]: Right Scroll Action Button -->
+                                <Button x:Name="PART_ScrollRightButton"
+                                        Grid.Column="5"
+                                        Content="{TemplateBinding ScrollRightContent}"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        IsVisible="False"/>
+
+                                <!-- [Col 6]: Fixed Right app margin linked to inherited spacing property -->
+                                <Border Grid.Column="6" 
+                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
             </ControlTemplate>
         </Setter>
     </Style>
 
     <!-- ================================================================= -->
-    <!-- CORE DEFAULT STYLING FOR NAVIGATION BUTTONS                       -->
-    <!-- Out-of-the-box settings that can be seamlessly overridden by themes -->
+    <!-- CORE OUT-OF-THE-BOX RIBBON VISUAL CHASSIS DEFAULTS                -->
     <!-- ================================================================= -->
+    
+    <!-- Tab headers background padding - tightly compressed for desktop grids -->
+    <Style Selector="local|ToolBar /template/ Border#PART_HeaderContainer">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="4,2,4,0"/>
+    </Style>
+
+    <!-- Force total compression on TabStrip items directly inside our ToolBar template scope -->
+    <Style Selector="local|ToolBar TabStrip TabStripItem">
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Padding" Value="10,0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FontSize" Value="11"/>
+    </Style>
+
+    <!-- Deep-dive override to kill the platform-specific default container height blocks -->
+    <Style Selector="local|ToolBar TabStrip TabStripItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Padding" Value="10,0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    
+    <!-- Unified, gorgeous out-of-the-box ribbon container plate -->
+    <Style Selector="local|ToolBar /template/ Border#PART_ContentContainer">
+        <Setter Property="Background" Value="#F3F3F3"/> <!-- Solid modern canvas plate -->
+        <Setter Property="BorderBrush" Value="#DCDCDC"/>
+        <Setter Property="BorderThickness" Value="0,1,0,1"/> <!-- Pure top and bottom separating rails -->
+        <Setter Property="Padding" Value="0,4,0,4"/> <!-- Breathing room for internal groups -->
+    </Style>
+
+    <!-- CORE DEFAULT STYLING FOR NAVIGATION BUTTONS -->
     <Style Selector="local|ToolBar Button#PART_ScrollLeftButton, local|ToolBar Button#PART_ScrollRightButton">
-        <!-- Default core padding instead of inline hardcode -->
         <Setter Property="Padding" Value="4,0,4,0"/>
         <Setter Property="Background" Value="#F9F9F9"/>
         <Setter Property="BorderBrush" Value="LightGray"/>
