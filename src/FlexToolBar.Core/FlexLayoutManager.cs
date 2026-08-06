@@ -17,6 +17,7 @@ public class FlexToolbarState
     public double GroupSpacing { get; set; } = 6.0;
     public string ActiveThemeName { get; set; } = "Default";
     public string SelectedTabId { get; set; } = string.Empty;
+    public string PanelEdge { get; set; } = "Top";
 
     public bool IsSingleExpandMode { get; set; }
 
@@ -44,7 +45,8 @@ public class FlexLayoutManager
             IsSingleExpandMode = viewModel.IsSingleExpandGroup,
             SelectedTabId = viewModel.SelectedTabId,
             GroupSpacing = viewModel.GroupSpacing,
-            ActiveThemeName = viewModel.ActiveThemeName
+            ActiveThemeName = viewModel.ActiveThemeName,
+            PanelEdge = viewModel.PanelEdge,
         };
 
         foreach (var tab in viewModel.Tabs)
@@ -84,6 +86,7 @@ public class FlexLayoutManager
         viewModel.SelectedTabId = state.SelectedTabId;
         viewModel.IsSingleExpandGroup = state.IsSingleExpandMode;
         viewModel.GroupSpacing = state.GroupSpacing > 0 ? state.GroupSpacing : 6.0; // Secure boundary fallback
+        viewModel.PanelEdge = !string.IsNullOrEmpty(state.PanelEdge) ? state.PanelEdge : "Top";
         viewModel.ActiveThemeName = !string.IsNullOrEmpty(state.ActiveThemeName) ? state.ActiveThemeName : "Default";
 
         if (state.Groups == null) return;

@@ -19,7 +19,16 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 ## Component Specifications & Defaults
 
 ### 1. ToolBar (Root Control)
+- **The Structural Placement Mandate (DockPanel Law):** To prevent visual frame degradation and guarantee pixel-perfect responsive alignment across multiple layout targets, the `ToolBar` control **must always be hosted directly inside a native `DockPanel` container** at the application core view layer. 
+  ```xml
+  <!-- Required Application Implementation Context -->
+  <DockPanel>
+      <local:ToolBar DockPanel.Dock="{Binding PanelEdge}" ... />
+      <!-- Remaining core workspace / document presenters -->
+  </DockPanel>
+  ```
 - `double ToolBar.GroupSpacing` (Attached Property, Default: `6.0`): **The paramount layout controller of the entire library.** Registered with visual tree inheritance enabled (`inherits: true`). This single `double` value leaks down the entire tree hierarchy to drive the synchronized layout rhythm across arrows, tabs, and inner groups natively. Changing this single value scales the entire toolbar gaps proportionally.
+- `global::Avalonia.Controls.Dock ToolBar.PanelEdge` (Styled Property, Default: `Dock.Top`): The single source of truth driving the spatial layout context. Coordinates both the edge attachment position via the application `DockPanel` layout layer and serves as the structural toggle for vertical/horizontal orientation mutations on touch tablets.
 - `bool IsSingleExpandGroup` (Default: `false`): If `true`, only one unpinned group can be expanded within the current tab at any given time. Coordinates state changes via the Logical Tree.
 - `bool RestoreSelectedTab` (Default: `false`): Controls whether the toolbar restores the last active tab workspace on startup. If `false`, it always defaults to the first available XAML tab.
 - `ObservableCollection<Tab> Tabs`

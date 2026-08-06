@@ -41,6 +41,12 @@ internal class RelayCommand : ICommand
 /// </summary>
 public class FlexToolBarViewModel : ViewModelBase, IFlexToolBarViewModel
 {
+    public string PanelEdge
+    {
+        get;
+        set => RaiseAndSetIfChanged(ref field, value);
+    } = "Top";
+
     /// <summary>
     /// Gets or sets the identifier of the currently selected tab.
     /// </summary>

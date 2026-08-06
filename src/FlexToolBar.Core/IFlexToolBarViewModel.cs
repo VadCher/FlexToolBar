@@ -8,6 +8,7 @@ namespace FlexToolBar.Core;
 /// </summary>
 public interface IFlexToolBarViewModel
 {
+    string PanelEdge { get; set; }
     double GroupSpacing { get; set; }
     string ActiveThemeName { get; set; }
     /// <summary>

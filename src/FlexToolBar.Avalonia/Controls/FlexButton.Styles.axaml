@@ -1,0 +1,88 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:FlexToolBar.Avalonia">
+    
+    <Style Selector="local|FlexButton">
+        <!-- Default button mechanics -->
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="4"
+                        Padding="{TemplateBinding Padding}">
+                    
+                    <!-- Pre-defined 2x2 Matrix Framework to avoid dynamic row parsing errors -->
+                    <Grid x:Name="PART_ButtonGrid" RowDefinitions="*,Auto" ColumnDefinitions="*,Auto">
+
+                        <!-- [DEFAULT LARGE MODE]: Icon is in Row 0, Column 0 (centered) -->
+                        <ContentPresenter x:Name="PART_IconPresenter"
+                                          Grid.Row="0" Grid.Column="0"
+                                          Grid.ColumnSpan="2"
+                                          Content="{TemplateBinding Icon}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+
+                        <!-- [DEFAULT LARGE MODE]: Text Label is in Row 1, Column 0 -->
+                        <ContentPresenter x:Name="PART_ContentPresenter"
+                                          Grid.Row="1" Grid.Column="0"
+                                          Grid.ColumnSpan="2"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          FontSize="11"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Bottom"
+                                          Margin="0,2,0,0"/>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Interactive hover effects -->
+    <Style Selector="local|FlexButton:pointerover">
+        <Setter Property="Background" Value="#EAEAEA"/>
+        <Setter Property="BorderBrush" Value="LightGray"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- ================================================================= -->
+    <!-- RIBBON CONTROL Mode Layout Modifiers                            -->
+    <!-- ================================================================= -->
+
+    <!-- MEDIUM MODE: Reposition assets into a clean horizontal row (Icon Left, Text Right) -->
+    <Style Selector="local|FlexButton:medium /template/ ContentPresenter#PART_IconPresenter">
+        <Setter Property="Grid.Row" Value="0"/>
+        <Setter Property="Grid.Column" Value="0"/>
+        <Setter Property="Grid.ColumnSpan" Value="1"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="local|FlexButton:medium /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Grid.Row" Value="0"/>
+        <Setter Property="Grid.Column" Value="1"/>
+        <Setter Property="Grid.ColumnSpan" Value="1"/>
+        <Setter Property="Margin" Value="4,0,0,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+
+    <!-- SMALL MODE: Icon Only, Text Hidden completely (Smart ToolTip takes over) -->
+    <Style Selector="local|FlexButton:small /template/ ContentPresenter#PART_IconPresenter">
+        <Setter Property="Grid.Row" Value="0"/>
+        <Setter Property="Grid.Column" Value="0"/>
+        <Setter Property="Grid.ColumnSpan" Value="2"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="local|FlexButton:small /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="IsVisible" Value="False"/>
+    </Style>
+
+</Styles>
