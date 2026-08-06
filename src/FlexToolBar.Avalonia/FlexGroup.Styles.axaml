@@ -3,10 +3,23 @@
         xmlns:local="clr-namespace:FlexToolBar.Avalonia">
     
     <Style Selector="local|FlexGroup">
+        <!-- Default out-of-the-box appearance tokens (fully customizable via styles) -->
+        <Setter Property="Background" Value="#F9F9F9"/>
+        <Setter Property="BorderBrush" Value="LightGray"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        
+        <!-- DEFAULT CORE SEPARATOR TEMPLATE: Renders as a clean transparent layout spacer by default -->
+        <Setter Property="SeparatorTemplate">
+            <ControlTemplate>
+                <Border Background="Transparent" BorderBrush="Transparent" BorderThickness="0"/>
+            </ControlTemplate>
+        </Setter>
+        
         <Setter Property="Template">
             <ControlTemplate>
                 <Grid>
-                    <!-- 1. Collapsed State: Large action button -->
+                    <!-- 1. Collapsed State: Large action button layout representation -->
                     <Button x:Name="PART_CollapsedButton"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch"
@@ -25,87 +38,105 @@
                         </Grid>
                     </Button>
 
-                    <!-- 2. Expanded State: Monolithic Flat Grid layout -->
-                    <Border x:Name="PART_ExpandedContainer"
-                            Background="#F9F9F9"
-                            BorderBrush="LightGray"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="{TemplateBinding Padding}"
-                            IsVisible="True">
+                    <!-- 2. Expanded State: Monolithic layout with outer layout StackPanel -->
+                    <StackPanel x:Name="PART_ExpandedContainer" 
+                                Orientation="Horizontal" 
+                                VerticalAlignment="Stretch"
+                                IsVisible="True">
                         
-                        <Grid RowDefinitions="*,Auto" ColumnDefinitions="Auto,*">
-                            
-                            <!-- [Row 0, Column 0]: Pin indicator button (Bulletproof text mode) -->
-                            <Button x:Name="PART_PinButton"
-                                          Grid.Row="0" Grid.Column="0"
-                                          Content="🖈"
-                                          MinHeight="0"  MinWidth="0"
-                                          Padding="0"
-                                          FontWeight="Normal"
-                                          HorizontalAlignment="Stretch"
-                                          VerticalAlignment="Top"
-                                          Background="Transparent"
-                                          BorderThickness="0"
-                                          HorizontalContentAlignment="Center"
-                                          VerticalContentAlignment="Center"
-                                          IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
-                            
-                            <!-- [Row 1, Column 0]: Collapse close button (Bulletproof text mode) -->
-                            <Button x:Name="PART_CloseButton" 
-                                    Grid.Row="1" Grid.Column="0"
-                                    Content="&#x2A09;" 
-                                    Padding="0" MinHeight="0"  MinWidth="0"
-                                    FontWeight="Normal"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Bottom"
-                                    HorizontalContentAlignment="Center"
-                                    VerticalContentAlignment="Center"/>
+                        <!-- THE SEPARATOR CONTROL: Stays OUTSIDE the group frame border context -->
+                        <ContentControl x:Name="PART_Separator"
+                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"
+                                        Template="{TemplateBinding SeparatorTemplate}"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalAlignment="Stretch"/>
 
-                            <!-- [Row 0, Column 1]: Pure single binding for user controls only -->
-                            <ContentPresenter Grid.Row="0" Grid.Column="1"
-                                              Content="{TemplateBinding Content}"
-                                              ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              VerticalAlignment="Center"/>
+                        <!-- CORRECTED SKELETON: Border wraps ONLY the inner grid framework safely -->
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            
+                            <Grid RowDefinitions="*,Auto" ColumnDefinitions="Auto,*">
+                                
+                                <!-- [Row 0, Column 0]: Pin indicator action button -->
+                                <Button x:Name="PART_PinButton"
+                                        Grid.Row="0" Grid.Column="0"
+                                        Content="🖈"
+                                        MinHeight="0" MinWidth="0"
+                                        Padding="0"
+                                        FontWeight="Normal"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Top"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
+                                
+                                <!-- [Row 1, Column 0]: Collapse close action button -->
+                                <Button x:Name="PART_CloseButton" 
+                                        Grid.Row="1" Grid.Column="0"
+                                        Content="✕" 
+                                        Padding="0" MinHeight="0" MinWidth="0"
+                                        FontWeight="Normal"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Bottom"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"/>
 
-                            <!-- [Row 1, Column 1]: Bottom header display label -->
-                            <TextBlock x:Name="PART_BottomHeaderBlock"
-                                       Grid.Row="1" Grid.Column="1"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Bottom"
-                                       FontSize="10"
-                                       Foreground="Gray"
-                                       Text="{Binding ExpandedHeader, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={Binding Header, RelativeSource={RelativeSource TemplatedParent}}}"
-                                       IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </Grid>
-                    </Border>
+                                <!-- [Row 0, Column 1]: User custom XAML control content container injection target -->
+                                <ContentPresenter Grid.Row="0" Grid.Column="1"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  VerticalAlignment="Center"/>
+
+                                <!-- [Row 1, Column 1]: Bottom header display label -->
+                                <TextBlock x:Name="PART_BottomHeaderBlock"
+                                           Grid.Row="1" Grid.Column="1"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Bottom"
+                                           FontSize="10"
+                                           Foreground="Gray"
+                                           Text="{Binding ExpandedHeader, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={Binding Header, RelativeSource={RelativeSource TemplatedParent}}}"
+                                           IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
                 </Grid>
             </ControlTemplate>
         </Setter>
     </Style>
 
-    <!-- State Layout Conditional Triggers Engine -->
+    <!-- State Layout Conditional Triggers Engine Context -->
     <Style Selector="local|FlexGroup:collapsed /template/ Button#PART_CollapsedButton">
         <Setter Property="IsVisible" Value="True" />
     </Style>
-    <Style Selector="local|FlexGroup:collapsed /template/ Border#PART_ExpandedContainer">
+    <Style Selector="local|FlexGroup:collapsed /template/ StackPanel#PART_ExpandedContainer">
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
     <Style Selector="local|FlexGroup:expanded /template/ Button#PART_CollapsedButton">
         <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="local|FlexGroup:expanded /template/ Border#PART_ExpandedContainer">
+    <Style Selector="local|FlexGroup:expanded /template/ StackPanel#PART_ExpandedContainer">
         <Setter Property="IsVisible" Value="True" />
     </Style>
     
     <Style Selector="local|FlexGroup:pinned /template/ Button#PART_CloseButton">
         <Setter Property="IsVisible" Value="False" />
     </Style>
-<Style Selector="local|FlexGroup:pinned /template/ Button#PART_PinButton /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Foreground" Value="#0078D4"/>
-</Style>
+
+    <!-- ================================================================= -->
+    <!-- AUTOMATED FIRST-CHILD KILL-SWITCH TRIGGER                         -->
+    <!-- Completely collapses the leftmost separator box to preserve origin edge alignment -->
+    <!-- ================================================================= -->
+    <Style Selector="local|FlexGroup:nth-child(1) /template/ ContentControl#PART_Separator">
+        <Setter Property="Width" Value="0" />
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
 
 </Styles>

@@ -14,6 +14,18 @@ namespace FlexToolBar.Avalonia
         private bool _xamlDefaultIsExpanded = true;
         private bool _xamlDefaultIsPinned = false;
 
+        /// <summary>
+        /// Defines the SeparatorTemplate styled property.
+        /// Allows custom themes to completely redefine the inner visual content of the group's left spacing layout separator.
+        /// </summary>
+        public static readonly StyledProperty<global::Avalonia.Markup.Xaml.Templates.ControlTemplate?> SeparatorTemplateProperty =
+            AvaloniaProperty.Register<FlexGroup, global::Avalonia.Markup.Xaml.Templates.ControlTemplate?>(nameof(SeparatorTemplate), null);
+
+        public global::Avalonia.Markup.Xaml.Templates.ControlTemplate? SeparatorTemplate
+        {
+            get => GetValue(SeparatorTemplateProperty);
+            set => SetValue(SeparatorTemplateProperty, value);
+        }
         public static readonly StyledProperty<string> HeaderProperty =
             AvaloniaProperty.Register<FlexGroup, string>(nameof(Header), string.Empty);
 

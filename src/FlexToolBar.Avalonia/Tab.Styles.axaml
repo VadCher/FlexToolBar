@@ -6,7 +6,7 @@
         <!-- Forces child FlexGroups to align horizontally using our inherited attached property -->
         <Setter Property="ItemsPanel">
             <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
+                <StackPanel Orientation="Horizontal" Spacing="0"/>
             </ItemsPanelTemplate>
         </Setter>
         

@@ -34,9 +34,9 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
 ### 2. Tab
 - Represents a collection of `FlexGroup` elements. Inherits from `HeaderedItemsControl`.
 - **Naked Content Carrier**: The `Tab` control is completely stripped of internal scroll containers, navigation arrow buttons, and outer layout framing metrics.
-- **Items Panel Rule**: The internal items presenter template uses a horizontal `StackPanel` where the item distance is driven strictly by our single inherited property:
+- **Items Panel Rule**: The internal items presenter template uses a horizontal `StackPanel` where the explicit spacing is completely reset to `0`. All visual distance and logical gaps between individual groups are now driven 100% strictly by the internal group layout separators.
   ```xml
-  <StackPanel Orientation="Horizontal" Spacing="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
+  <StackPanel Orientation="Horizontal" Spacing="0"/>
   ```
 - `ftb:Tab.TabId` (Attached Property): Unique string identifier for layout serialization.
 
@@ -46,6 +46,7 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
   - `:expanded` (`IsExpanded == true`): Hides the large button, presents user `Content`, and shows top-left pinning controls.
 - `ftb:FlexGroup.GroupId` (Attached Property): Unique string identifier for layout serialization.
 - **Properties & Defaults**:
+  - `SeparatorTemplate` (Default: `null`): Allows custom themes to completely redefine the inner visual content and layout style of the group's left spacing separator. Defaults to an empty transparent `Border` "out-of-the-box", converting the gap into a fully themeable Ribbon boundary asset.
   - `IsExpanded` (Default: `true`, TwoWay binding mode).
   - `IsPinned` (Default: `false`): When `IsPinned == true`, the group becomes non-collapsible. The close action is suppressed, and `PART_CloseButton` is hidden via XAML pseudo-classes.
   - `PinVisible` (Default: `true`): Controls the visibility of the pin toggle button.
@@ -62,7 +63,7 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
    - Flushes state primitives to disk after a cooling interval defined by `AutoSaveInterval` (Default: 5 seconds). Setting this property to `TimeSpan.Zero` completely disables the background timer.
 4. **State Payload**: Matches elements via stable string identifiers (`TabId` and `GroupId`). Serializes only primitive state values: `SelectedTabId`, `IsSingleExpandMode`, `GroupId`, `IsExpanded`, `IsPinned`.
 
-## Styling & Customization Guide (XAML)
+## 4. Styling & Customization Guide (XAML)
 Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. The base template styles (`FlexToolBar.axaml`) contain only structural grid skeletal definitions and logical bindings.
 
 ### Theme Architecture Rules
@@ -86,3 +87,17 @@ Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and fee
 - `PART_TabScrollViewer` (`ScrollViewer`) — Global horizontal viewport framework carrying active presenters.
 - `PART_ScrollLeftButton` (`Button`) — Touch-friendly left navigation snap action element.
 - `PART_ScrollRightButton` (`Button`) — Touch-friendly right navigation snap action element.
+- `PART_Separator` (`ContentControl`) — Layout spacing разделитель на уровне каждой группы FlexGroup.
+
+---
+
+## 5. Extensible Layout Assets & Theme Sovereignty
+
+Every navigation asset and layout placeholder inside the library complies with the strict "Zero Hardcoded Spacing" policy. Granular structural boundaries are exposed directly to the XAML compilation engine via properties, ensuring complete theme override independence.
+
+### Group Separator Pipeline:
+* **First-Child Kill-Switch:** The leftmost separator control within a tab collection context automatically forces its width to zero and hides itself via a native `:nth-child(1)` compiler selector. This guarantees pristine vertical alignment with the static tab header rails out-of-the-box, while all subsequent groups cleanly present their custom templates.
+
+### Navigation Assets Injection API:
+* **ScrollLeftContent & ScrollRightContent** (Type: `object`, Default: `"◀"` / `"▶"`): Declared at the root `ToolBar` dependency property registry. Allows styling engines to seamlessly inject vector geometry (`Path`), custom SVG graphics, or stylized Unicode glyphs without touching the base source templates.
+* **Elastic Default Button Bounds**: Core navigation buttons inside `ToolBar.Styles.axaml` completely erase explicit width boundaries (`Width="Auto"`). They utilize a default style container specifying `Padding="4,0,4,0"`, which forces the button framework border to dynamically stretch or shrink to safely hug the shape of any injected glyph context natively.

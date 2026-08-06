@@ -17,24 +17,20 @@
                         <ColumnDefinition Width="Auto"/> <!-- 6: Fixed Right Edge Padding -->
                     </Grid.ColumnDefinitions>
                     
-                     <!-- ================================================================= -->
+                    <!-- ================================================================= -->
                     <!-- ROW 0: TAB STRIP HEADERS PANEL                                    -->
                     <!-- Seated directly in Col 1 to stay aligned with the scroll layout   -->
                     <!-- ================================================================= -->
-                    <!-- FIX: Explicitly zero out hidden framework Padding/Margin to prevent -->
-                    <!-- TabStrip indicator line from clipping or sliding into the gap space -->
                     <TabStrip x:Name="PART_TabSelectionStrip"
                               Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="6"
                               ItemsSource="{TemplateBinding Tabs}"
                               IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}"
-                              HorizontalAlignment="Left"
                               Padding="0"
                               Margin="0"
                               Background="Transparent">
                         <TabStrip.ItemTemplate>
                             <DataTemplate x:DataType="local:Tab">
-                                <!-- Clean native header string bound strictly without layout overrides -->
-                                <TextBlock Text="{Binding Header}" HorizontalAlignment="Left" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Header}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </DataTemplate>
                         </TabStrip.ItemTemplate>
                     </TabStrip>
@@ -47,14 +43,10 @@
                     <Border Grid.Row="1" Grid.Column="0" 
                             Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
 
-                    <!-- [Row 1, Col 1]: Left Scroll Action Button (Width=24 for touch) -->
+                    <!-- [Row 1, Col 1]: Left Scroll Action Button (Width is now dynamic Auto-size) -->
                     <Button x:Name="PART_ScrollLeftButton"
                             Grid.Row="1" Grid.Column="1"
-                            Content="◀"
-                            Width="24"
-                            Padding="0"
-                            BorderThickness="0"
-                            Background="Transparent"
+                            Content="{TemplateBinding ScrollLeftContent}"
                             VerticalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -81,14 +73,10 @@
                             Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
                             IsVisible="{Binding #PART_ScrollRightButton.IsVisible}"/>
 
-                    <!-- [Row 1, Col 5]: Right Scroll Action Button (Width=24 for touch) -->
+                    <!-- [Row 1, Col 5]: Right Scroll Action Button (Width is now dynamic Auto-size) -->
                     <Button x:Name="PART_ScrollRightButton"
                             Grid.Row="1" Grid.Column="5"
-                            Content="▶"
-                            Width="24"
-                            Padding="0"
-                            BorderThickness="0"
-                            Background="Transparent"
+                            Content="{TemplateBinding ScrollRightContent}"
                             VerticalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -101,12 +89,19 @@
             </ControlTemplate>
         </Setter>
     </Style>
-    <Style Selector="local|ToolBar TabStrip /template/ TabStripItem">
-        <Setter Property="MinWidth" Value="0"/>
-        <Setter Property="MinHeight" Value="0"/>
-        <!-- Clear horizontal padding to squeeze the item box tight around the letters -->
-        <Setter Property="Padding" Value="0"/> <!-- Controlled compact breathing room -->
-        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+
+    <!-- ================================================================= -->
+    <!-- CORE DEFAULT STYLING FOR NAVIGATION BUTTONS                       -->
+    <!-- Out-of-the-box settings that can be seamlessly overridden by themes -->
+    <!-- ================================================================= -->
+    <Style Selector="local|ToolBar Button#PART_ScrollLeftButton, local|ToolBar Button#PART_ScrollRightButton">
+        <!-- Default core padding instead of inline hardcode -->
+        <Setter Property="Padding" Value="4,0,4,0"/>
+        <Setter Property="Background" Value="#F9F9F9"/>
+        <Setter Property="BorderBrush" Value="LightGray"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Foreground" Value="#333333"/>
     </Style>
 
 </Styles>

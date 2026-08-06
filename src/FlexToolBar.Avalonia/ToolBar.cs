@@ -27,6 +27,31 @@ public class ToolBar : TemplatedControl
     private bool _isInitialBoot = true;
     private bool _xamlDefaultIsSingleExpand = false;
 
+        /// <summary>
+        /// Defines the ScrollLeftContent styled property.
+        /// Allows themes to override the inner visual representation of the left navigation button.
+        /// </summary>
+        public static readonly StyledProperty<object> ScrollLeftContentProperty =
+            AvaloniaProperty.Register<ToolBar, object>(nameof(ScrollLeftContent), "◀");
+
+        public object ScrollLeftContent
+        {
+            get => GetValue(ScrollLeftContentProperty);
+            set => SetValue(ScrollLeftContentProperty, value);
+        }
+
+        /// <summary>
+        /// Defines the ScrollRightContent styled property.
+        /// Allows themes to override the inner visual representation of the right navigation button.
+        /// </summary>
+        public static readonly StyledProperty<object> ScrollRightContentProperty =
+            AvaloniaProperty.Register<ToolBar, object>(nameof(ScrollRightContent), "▶");
+
+        public object ScrollRightContent
+        {
+            get => GetValue(ScrollRightContentProperty);
+            set => SetValue(ScrollRightContentProperty, value);
+        }
     /// <summary>
     /// Defines the GroupSpacing attached property with visual tree inheritance enabled.
     /// Drives the unified layout rhythm across arrows, tabs, and inner groups.
