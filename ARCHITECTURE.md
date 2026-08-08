@@ -1,78 +1,39 @@
 # FlexToolBar Architecture Specification
 
-## Project Overview
-FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar and a Ribbon control designed for modern desktop applications (Avalonia 12+, with future targets for WPF/MAUI). It operates purely under MVVM ideology.
+## 1. Project Overview & Architectural Rules
 
-## Target Frameworks
-- Multi-targeting: `.NET 8.0`, `.NET 9.0`, `.NET 10.0`
-- Language Version: `latest` (C# 13/14 features enabled)
-- Main Platform: `Avalonia 12.1.x`
+FlexToolBar is a high-performance, lightweight hybrid layout controller designed under strict MVVM ideology for modern desktop and touch-based application interfaces.
 
-## Core Architectural Rules & Pipeline
-1. **Separation of Concerns**: 
-   - `FlexToolBar.Core`: Pure C# layer. Zero UI dependencies. Contains interfaces, state machine, and JSON DTOs.
-   - `FlexToolBar.Avalonia`: UI implementation layer (`Avalonia 12`). Contains custom controls, themes, and templates.
-2. **Context & Hierarchy**: Standard `DataContext` inheritance is preserved. Elements within groups bind directly to the inherited or explicitly overwritten `DataContext` (e.g., active document from a docking system).
-3. **Internal Layout Freedom**: `FlexGroup` is a `ContentControl`. The inner layout (Grid, StackPanel, WrapPanel) is fully defined by the end-user in XAML.
-4. **Resource Names**: To prevent Avalonia 12 XAMLIL compiler conflicts with C# class types, all standalone control templates must use the `.Styles.axaml` file extension suffix.
+### Core Architecture Pipeline
+- **Separation of Concerns**: 
+  - `FlexToolBar.Core`: Pure cross-platform data structures and state carriers. Zero framework visual dependencies. Highly optimized for in-place `System.Text.Json` `.Populate` mapping.
+  - `FlexToolBar.Avalonia`: Implementation layer containing custom controls, interactive templates, and stylesheets.
+- **Unified State Modeling (O(1) Architecture)**: Tab collection structures are managed statically at the XAML composition layer. The core tracking layer ignores nested visual tree iterations, isolating all running group states inside a globally accessible flat identity registry mapping layout parameters atomically via a unique `GroupId` dictionary key.
 
-## Component Specifications & Defaults
+## 2. Component Specifications & Defaults (XAML/UI)
 
-### 1. ToolBar (Root Control)
-- **The Structural Placement Mandate (DockPanel Law):** To prevent visual frame degradation and guarantee pixel-perfect responsive alignment across multiple layout targets, the `ToolBar` control **must always be hosted directly inside a native `DockPanel` container** at the application core view layer. 
+### ToolBar (Root Control)
+- **The Structural Placement Mandate (DockPanel Law):** To guarantee pixel-perfect responsive alignment across touch targets, the `ToolBar` control must always be hosted directly inside a native `DockPanel` container at the view layer.
   ```xml
-  <!-- Required Application Implementation Context -->
   <DockPanel>
-      <local:ToolBar DockPanel.Dock="{Binding PanelEdge}" ... />
-      <!-- Remaining core workspace / document presenters -->
+      <local:ToolBar DockPanel.Dock="{Binding PanelEdge}" />
   </DockPanel>
   ```
-- `double ToolBar.GroupSpacing` (Attached Property, Default: `6.0`): **The paramount layout controller of the entire library.** Registered with visual tree inheritance enabled (`inherits: true`). This single `double` value leaks down the entire tree hierarchy to drive the synchronized layout rhythm across arrows, tabs, and inner groups natively. Changing this single value scales the entire toolbar gaps proportionally.
-- `global::Avalonia.Controls.Dock ToolBar.PanelEdge` (Styled Property, Default: `Dock.Top`): The single source of truth driving the spatial layout context. Coordinates both the edge attachment position via the application `DockPanel` layout layer and serves as the structural toggle for vertical/horizontal orientation mutations on touch tablets.
-- `bool IsSingleExpandGroup` (Default: `false`): If `true`, only one unpinned group can be expanded within the current tab at any given time. Coordinates state changes via the Logical Tree.
-- `bool RestoreSelectedTab` (Default: `false`): Controls whether the toolbar restores the last active tab workspace on startup. If `false`, it always defaults to the first available XAML tab.
-- `ObservableCollection<Tab> Tabs`
-- `bool IsTabHeaderVisible` (Read-only): Automatically evaluated (`Tabs.Count > 1`). If `false`, the tab selection strip is completely hidden.
-- `ICommand ResetLayoutCommand` (Read-only): Autonomous library command. Deletes the physical JSON file from disk, resets `SelectedIndex` to 0, and forces all controls to gracefully fall back to their compiled XAML defaults via internal caching.
-- `string? AutoSaveId` (Default: `null`): Unique configuration identifier for automated layout persistence. Enables complete zero-code operation.
-- `void RefreshLayout()`: Public API method. Forces the toolbar to instantly re-read and apply configurations from the physical JSON layout file.
-- **Root Structural Framework (Nested Grid Infrastructure)**: The global layout orchestration is split into two logical layers inside the `ToolBar` template to cleanly isolate global tab definitions from active layout presentation spaces:
-  ```xml
-  <!-- Primary Structural Skeleton Frame -->
-  <Grid RowDefinitions="Auto,*" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-      <!-- Row 0: Hosts PART_HeaderContainer with the native TabStrip -->
-      <!-- Row 1: Hosts PART_ContentContainer wrapping the single-row navigation Grid -->
-  </Grid>
-  ```
-  * **Row 0 (Tab Header Workspace Layer):** Hosts `PART_HeaderContainer` (`Border`). This contains the global `TabStrip` navigation manager (`PART_TabSelectionStrip`) operating natively on a single flat surface. It provides static, wobble-free tab header positioning that never jitters or slides during content scrolling operations.
-  * **Row 1 (Active Ribbon Plate Layer):** Hosts `PART_ContentContainer` (`Border`). This border acts as the single styleable background and frame chassis for tool groups. Inside this container, a standalone single-row, 7-column layout engine coordinates touch navigation:
-    ```xml
-    <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto"/> <!-- 0: Fixed Left Edge Application Padding -->
-        <ColumnDefinition Width="Auto"/> <!-- 1: Left Arrow Button Context -->
-        <ColumnDefinition Width="Auto"/> <!-- 2: Dynamic Inner Left Spacing Gap -->
-        <ColumnDefinition Width="*"/>    <!-- 3: Global Main Content Scroll Viewport -->
-        <ColumnDefinition Width="Auto"/> <!-- 4: Dynamic Inner Right Spacing Gap -->
-        <ColumnDefinition Width="Auto"/> <!-- 5: Right Arrow Button Context -->
-        <ColumnDefinition Width="Auto"/> <!-- 6: Fixed Right Edge Application Padding -->
-    </Grid.ColumnDefinitions>
-    ```
-    * **Column 3 Viewport Bounds:** The central `ScrollViewer` (`PART_TabScrollViewer`) and active `ContentPresenter` are cleanly isolated inside Column 3. When navigation arrow columns (Column 1 or 5) collapse to zero width, adjacent inner spacing gap borders (Column 2 or 4) reactively collapse as well, ensuring that the remaining tool items smoothly scale and float back to touch the respective outer padding lines symmetrically.
+- `FlexToolBarViewModel ViewModel` (Internal Registry Core): The single source of truth driving the component configuration.
+- `double ToolBar.GroupSpacing` (Attached Property, Default: `6.0`): Visually drives layout padding gaps. Registered with visual tree inheritance enabled (`inherits: true`).
+- `global::Avalonia.Controls.Dock ToolBar.PanelEdge` (Styled Property, Default: `Dock.Top`): Toggles screen edge attachment context.
+- `ICommand ResetLayoutCommand` (UI Internal Command): Executes direct hardware asset resets utilizing the framework's internal `ClearValue` mechanisms. Property values seamlessly cascade back into the core model registry via active TwoWay data bindings.
 
-### 2. Tab
-- Represents a collection of `FlexGroup` elements. Inherits from `HeaderedItemsControl`.
-- **Naked Content Carrier**: The `Tab` control is completely stripped of internal scroll containers, navigation arrow buttons, and outer layout framing metrics.
-- **Items Panel Rule**: The internal items presenter template uses a horizontal `StackPanel` where the explicit spacing is completely reset to `0`. All visual distance and logical gaps between individual groups are now driven 100% strictly by the internal group layout separators.
-  ```xml
-  <StackPanel Orientation="Horizontal" Spacing="0"/>
-  ```
-- `ftb:Tab.TabId` (Attached Property): Unique string identifier for layout serialization.
+### Tab
+- Represents a structural container of `FlexGroup` instances. Inherits from `HeaderedItemsControl`.
+- **Naked Content Carrier**: Stripped of internal scroll managers and outer boundary metrics. Internal elements panel implements a horizontal `StackPanel` with an explicit spacing constraint locked to `0`.
+- `string TabId` (Attached Property): Unique identifier pairing the static XAML tab layout with localized group state boundaries.
 
-### 3. FlexGroup (Smart Container)
+### FlexGroup (Smart Container)
 - Acts as a `ContentControl` switching between two main visual states via pseudo-classes:
   - `:collapsed` (`IsExpanded == false`): Rendered as a single large action button containing `Icon` (top) and `Header` (bottom). Clicking toggles `IsExpanded = true`.
   - `:expanded` (`IsExpanded == true`): Hides the large button, presents user `Content`, and shows top-left pinning controls.
-- `ftb:FlexGroup.GroupId` (Attached Property): Unique string identifier for layout serialization.
+- `string GroupId` (Required Identity Property): Symmetrically pairs the visual control instance with its tracked core model inside the global dictionary registry.
 - **Properties & Defaults**:
   - `SeparatorTemplate` (Default: `null`): Allows custom themes to completely redefine the inner visual content and layout style of the group's left spacing separator. Defaults to an empty transparent `Border` "out-of-the-box", converting the gap into a fully themeable Ribbon boundary asset.
   - `IsExpanded` (Default: `true`, TwoWay binding mode).
@@ -82,23 +43,43 @@ FlexToolBar is a lightweight, high-performance hybrid between a classic ToolBar 
   - `Header`: Display text for the collapsed button.
   - `ExpandedHeader`: Display text for the bottom of the expanded panel. If null, automatically falls back to `Header`. If explicit empty string (`""`), the text block collapses (`IsVisible="False"`), saving vertical space.
 
-## Layout Lifecycle & Serialization (JSON DTO)
-1. **Phase Separation Engine**: During the control's boot phase (`OnAttachedToVisualTree`), all original XAML markup definitions are cached inside internal fields (`_xamlDefaultIsSingleExpand`, `_xamlDefaultIsExpanded`, etc.).
-2. **File Loading Sequence**: The configuration JSON file is applied strictly inside the **`OnLoaded`** method via `RefreshLayout()`. This guarantees that file values safely override layout states without damaging or wiping the initial compiled XAML cache.
-3. **Crash Resilience (Debounced Auto-Save)**: Built-in background serialization driven by a native `DispatcherTimer` running at `DispatcherPriority.Background`. 
-   - Activates automatically upon any runtime mutations of properties (`IsExpanded`, `IsPinned`, or active tab switches).
+## 3. Layout Lifecycle & Serialization Pipeline
+
+1. **Phase Separation Engine**: During the control's boot phase (XAML parsing), visual UI components (`FlexGroup`) initialize their internal concrete `FlexGroupViewModel` instances locally, caching compile-time XAML literal values and stylesheet default metrics natively.
+2. **Top-Down Registry Assembly**: The true orchestration handshake executes strictly inside the root **`OnLoaded`** method of the `ToolBar` control before the configuration file is read. The master `ToolBar` iterates through its static `Tabs` collection, discovers all child `FlexGroup` containers, injects the corresponding `TabId` markers, and registers their live `GroupViewModel` references directly into the global flat dictionary registry via unique `GroupId` keys.
+3. **In-Place Population & IsEdited Reset**: Immediately following assembly, the layout configuration JSON file is processed via the native .NET `JsonObjectCreationHandling.Populate` pipeline. Property mutations stream directly onto the active bound core models. Upon successful completion of this layout generation sequence, `ViewModel.ResetIsEdited()` is explicitly invoked to flush false-positive tracking flags caused by file deserialization steps, establishing a clean operational baseline (`IsEdited == false`).
+4. **First-Boot Forced Baseline**: If the physical JSON configuration file does not exist on disk (cold startup phase), the serialization engine instantly forces an explicit execution of `GetLayoutJson()`. The compiled XAML defaults are instantly written to disk as an absolute blueprint snapshot, followed by an immediate execution of `ResetIsEdited()`.
+5. **Crash Resilience (Debounced Auto-Save)**: Built-in background serialization driven by a native `DispatcherTimer` running at `DispatcherPriority.Background`.
+   - Activates reactively only when the core view model fires an explicit property notification for the global `IsEdited` state flag.
    - Uses a strict **Debounce pattern** via `Stop()/Start()` sequence to group rapid user interaction cycles and minimize SSD write wear.
    - Flushes state primitives to disk after a cooling interval defined by `AutoSaveInterval` (Default: 5 seconds). Setting this property to `TimeSpan.Zero` completely disables the background timer.
-4. **State Payload**: Matches elements via stable string identifiers (`TabId` and `GroupId`). Serializes only primitive state values: `SelectedTabId`, `IsSingleExpandMode`, `GroupId`, `IsExpanded`, `IsPinned`.
 
-## 4. Styling & Customization Guide (XAML)
+## 4. Core Execution Models (`FlexToolBar.Core`)
+
+### ViewModelBase
+Provides property notification triggers optimized for modern C# development semantics.
+- `bool IsEdited` (Read-only): Automatically flipped to `true` whenever any underlying state mutation executes via the core `RaiseAndSetIfChanged` assignment engine. Fires explicit `OnPropertyChanged` notifications upon both activation and successful persistence resets to drive external responsive UI indicators (saving status icons, explicit save buttons availability) natively.
+
+### FlexToolBarViewModel
+The master cross-platform flat container coordinating live library metric snapshots. Completely stripped of abstract UI-interface wrappers and heavy nested tab-collection tracking events.
+- `Dictionary<string, FlexGroupViewModel> Groups`: Flat high-performance state catalog pairing unique `GroupId` keys with live group instances for `O(1)` accessibility.
+- `bool IsSingleExpandGroup` (Default: `false`): Property setter intercepts activation mutations to instantly execute a localized, flat boundary collapsing sequence across the group registry.
+
+### FlexGroupViewModel
+Tracked container carrying state variables for a single user group instance.
+- `string TabId`: Localized runtime string boundary marker allowing isolated single-expand mutations. Excluded from disk serialization routines via explicit `[JsonIgnore]` constraints.
+- `bool IsExpanded` (Default: `true`): Setter logic intercepts execution steps to perform localized group collapses restricted within matching `TabId` scopes without subscribing to verbose external property changed listeners.
+- `bool IsPinned` (Default: `false`): Prevents automatic or layout-driven structural collapsing routines.
+
+## 5. Styling, Themes & Extensible Assets
+
 Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. The base template styles (`FlexToolBar.axaml`) contain only structural grid skeletal definitions and logical bindings.
 
 ### Theme Architecture Rules
-1. **Zero Hardcoded Spacing**: Standalone visual properties like `Margin`, `Padding`, `FontSize`, and `MinHeight` must not be hardcoded inside base control templates. They must use template bindings (`Padding="{TemplateBinding Padding}"`) or be defined strictly inside dedicated theme files within the `Themes/` directory.
-2. **Autonomous Collapsing**: Layout grids inside components must use `Auto` dimensions for control columns (`ColumnDefinitions="Auto,*"`). Combined with `IsVisible="False"`, this ensures that control panels collapse completely, resetting margins to absolute zero when buttons are hidden.
-3. **App-Level Theming**: The core library file `FlexToolBar.axaml` includes only essential layout mechanics. The app developer explicitly opts into a specific visual appearance by attaching a layout theme file (e.g., `Themes/Compact.Styles.axaml`) inside their `App.axaml` stylesheet scope.
-4. **Direct Template Targetry**: Custom theme files manipulate internal named template parts (e.g., `ToggleButton#PART_PinButton`) using direct template scope selectors (`/template/`), leaving the core C# layout classes decoupled from granular pixel properties.
+- **Zero Hardcoded Spacing**: Standalone visual properties like `Margin`, `Padding`, `FontSize`, and `MinHeight` must not be hardcoded inside base control templates. They must use template bindings (`Padding="{TemplateBinding Padding}"`) or be defined strictly inside dedicated theme files within the `Themes/` directory.
+- **Autonomous Collapsing**: Layout grids inside components must use `Auto` dimensions for control columns (`ColumnDefinitions="Auto,*"`). Combined with `IsVisible="False"`, this ensures that control panels collapse completely, resetting margins to absolute zero when buttons are hidden.
+- **App-Level Theming**: The core library file `FlexToolBar.axaml` includes only essential layout mechanics. The app developer explicitly opts into a specific visual appearance by attaching a layout theme file (e.g., `Themes/Compact.Styles.axaml`) inside their `App.axaml` stylesheet scope.
+- **Direct Template Targetry**: Custom theme files manipulate internal named template parts (e.g., `ToggleButton#PART_PinButton`) using direct template scope selectors (`/template/`), leaving the core C# layout classes decoupled from granular pixel properties.
 
 ### Visual States (Pseudo-classes)
 - `:expanded` — Active when `IsExpanded == true`. Renders the full control layout.
@@ -115,17 +96,11 @@ Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and fee
 - `PART_TabScrollViewer` (`ScrollViewer`) — Global horizontal viewport framework carrying active presenters.
 - `PART_ScrollLeftButton` (`Button`) — Touch-friendly left navigation snap action element.
 - `PART_ScrollRightButton` (`Button`) — Touch-friendly right navigation snap action element.
-- `PART_Separator` (`ContentControl`) — Layout spacing разделитель на уровне каждой группы FlexGroup.
+- `PART_Separator` (`ContentControl`) — Layout spacing separator configured per individual `FlexGroup`.
 
----
+### Group Separator Pipeline
+- **First-Child Kill-Switch:** The leftmost separator control within a tab collection context automatically forces its width to zero and hides itself via a native `:nth-child(1)` compiler selector. This guarantees pristine vertical alignment with the static tab header rails out-of-the-box, while all subsequent groups cleanly present their custom templates.
 
-## 5. Extensible Layout Assets & Theme Sovereignty
-
-Every navigation asset and layout placeholder inside the library complies with the strict "Zero Hardcoded Spacing" policy. Granular structural boundaries are exposed directly to the XAML compilation engine via properties, ensuring complete theme override independence.
-
-### Group Separator Pipeline:
-* **First-Child Kill-Switch:** The leftmost separator control within a tab collection context automatically forces its width to zero and hides itself via a native `:nth-child(1)` compiler selector. This guarantees pristine vertical alignment with the static tab header rails out-of-the-box, while all subsequent groups cleanly present their custom templates.
-
-### Navigation Assets Injection API:
-* **ScrollLeftContent & ScrollRightContent** (Type: `object`, Default: `"◀"` / `"▶"`): Declared at the root `ToolBar` dependency property registry. Allows styling engines to seamlessly inject vector geometry (`Path`), custom SVG graphics, or stylized Unicode glyphs without touching the base source templates.
-* **Elastic Default Button Bounds**: Core navigation buttons inside `ToolBar.Styles.axaml` completely erase explicit width boundaries (`Width="Auto"`). They utilize a default style container specifying `Padding="4,0,4,0"`, which forces the button framework border to dynamically stretch or shrink to safely hug the shape of any injected glyph context natively.
+### Navigation Assets Injection API
+- **ScrollLeftContent & ScrollRightContent** (Type: `object`, Default: `"◀"` / `"▶"`): Declared at the root `ToolBar` dependency property registry. Allows styling engines to seamlessly inject vector geometry (`Path`), custom SVG graphics, or stylized Unicode glyphs without touching the base source templates.
+- **Elastic Default Button Bounds**: Core navigation buttons inside `ToolBar.Styles.axaml` completely erase explicit width boundaries (`Width="Auto"`). They utilize a default style container specifying `Padding="4,0,4,0"`, which forces the button framework border to dynamically stretch or shrink to safely hug the shape of any injected glyph context natively.
