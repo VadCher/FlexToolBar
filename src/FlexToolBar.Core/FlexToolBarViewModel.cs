@@ -1,193 +1,88 @@
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Windows.Input;
+using System;
+using System.Collections.Generic;
 
-namespace FlexToolBar.Core;
-
-/// <summary>
-/// Represents a simple command implementation for ICommand.
-/// </summary>
-internal class RelayCommand : ICommand
+namespace FlexToolBar.Core
 {
-    private readonly Action _execute;
-    private readonly Func<bool>? _canExecute;
-
-    /// <summary>
-    /// Initializes a new instance of the RelayCommand class.
-    /// </summary>
-    /// <param name="execute">The execution logic.</param>
-    /// <param name="canExecute">The execution status logic.</param>
-    public RelayCommand(Action execute, Func<bool>? canExecute = null)
+    public class FlexToolBarViewModel : ViewModelBase
     {
-        _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-        _canExecute = canExecute;
-    }
+        public Dictionary<string, FlexGroupViewModel> Groups { get; set; } = new();
 
-#pragma warning disable CS0067
-    /// <inheritdoc />
-    public event EventHandler? CanExecuteChanged;
-#pragma warning restore CS0067
-
-    /// <inheritdoc />
-    public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
-
-    /// <inheritdoc />
-    public void Execute(object? parameter) => _execute();
-}
-
-/// <summary>
-/// Represents the implementation of the IFlexToolBarViewModel interface.
-/// </summary>
-public class FlexToolBarViewModel : ViewModelBase, IFlexToolBarViewModel
-{
-    public string PanelEdge
-    {
-        get;
-        set => RaiseAndSetIfChanged(ref field, value);
-    } = "Top";
-
-    /// <summary>
-    /// Gets or sets the identifier of the currently selected tab.
-    /// </summary>
-    public string SelectedTabId { get; set; } = string.Empty;
-
-    private readonly ObservableCollection<IFlexTabViewModel> _tabs = new();
-
-    /// <summary>
-    /// Initializes a new instance of the FlexToolBarViewModel class.
-    /// </summary>
-    public FlexToolBarViewModel()
-    {
-        Tabs.CollectionChanged += OnTabsCollectionChanged;
-        ResetLayoutCommand = new RelayCommand(ResetLayout);
-    }
-
-    public double GroupSpacing
-    {
-        get;
-        set => RaiseAndSetIfChanged(ref field, value);
-    } = 6.0;
-
-    public bool IsSingleExpandGroup
-    {
-        get;
-        set => RaiseAndSetIfChanged(ref field, value);
-    } = false;
-
-    public string ActiveThemeName
-    {
-        get;
-        set => RaiseAndSetIfChanged(ref field, value);
-    } = "Default";
-
-    /// <inheritdoc />
-    public ObservableCollection<IFlexTabViewModel> Tabs => _tabs;
-
-    /// <inheritdoc />
-    public ICommand ResetLayoutCommand { get; }
-
-    private void OnTabsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.NewItems != null)
+        public void RegisterGroup(string groupId, FlexGroupViewModel groupViewModel)
         {
-            foreach (var tab in e.NewItems.OfType<IFlexTabViewModel>())
-            {
-                HookTabGroups(tab);
-            }
+            if (string.IsNullOrEmpty(groupId) || groupViewModel == null) return;
+            
+            groupViewModel.SetParent(this);
+            Groups[groupId] = groupViewModel;
         }
 
-        if (e.OldItems != null)
+        public double GroupSpacing
         {
-            foreach (var tab in e.OldItems.OfType<IFlexTabViewModel>())
-            {
-                UnhookTabGroups(tab);
-            }
-        }
-    }
+            get => field;
+            set => RaiseAndSetIfChanged(ref field, value);
+        } = 6.0;
 
-    private void HookTabGroups(IFlexTabViewModel tab)
-    {
-        tab.Groups.CollectionChanged += OnGroupsCollectionChanged;
-        foreach (var group in tab.Groups)
+        public string ActiveThemeName
         {
-            if (group is INotifyPropertyChanged notifyGroup)
+            get => field;
+            set
             {
-                notifyGroup.PropertyChanged += OnGroupPropertyChanged;
+                if (string.IsNullOrEmpty(value)) return;
+                RaiseAndSetIfChanged(ref field, value);
             }
-        }
-    }
+        } = "Default";
 
-    private void UnhookTabGroups(IFlexTabViewModel tab)
-    {
-        tab.Groups.CollectionChanged -= OnGroupsCollectionChanged;
-        foreach (var group in tab.Groups)
+        public string SelectedTabId
         {
-            if (group is INotifyPropertyChanged notifyGroup)
+            get => field;
+            set
             {
-                notifyGroup.PropertyChanged -= OnGroupPropertyChanged;
+                if (string.IsNullOrEmpty(value)) return;
+                RaiseAndSetIfChanged(ref field, value);
             }
-        }
-    }
+        } = string.Empty;
 
-    private void OnGroupsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.NewItems != null)
+        public string PanelEdge
         {
-            foreach (var group in e.NewItems.OfType<IFlexGroupViewModel>())
+            get => field;
+            set
             {
-                if (group is INotifyPropertyChanged notifyGroup)
+                if (string.IsNullOrEmpty(value)) return;
+                RaiseAndSetIfChanged(ref field, value);
+            }
+        } = "Top";
+
+        public bool IsSingleExpandGroup
+        {
+            get => field;
+            set
+            {
+                if (RaiseAndSetIfChanged(ref field, value) && value)
                 {
-                    notifyGroup.PropertyChanged += OnGroupPropertyChanged;
+                    CollapseGroupsToSingleMode();
                 }
             }
-        }
+        } = false;
 
-        if (e.OldItems != null)
+        private void CollapseGroupsToSingleMode()
         {
-            foreach (var group in e.OldItems.OfType<IFlexGroupViewModel>())
-            {
-                if (group is INotifyPropertyChanged notifyGroup)
-                {
-                    notifyGroup.PropertyChanged -= OnGroupPropertyChanged;
-                }
-            }
-        }
-    }
+            var activeTabsTracker = new HashSet<string>();
 
-    private void OnGroupPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (!IsSingleExpandGroup) return;
-        if (e.PropertyName == nameof(IFlexGroupViewModel.IsExpanded) && sender is IFlexGroupViewModel changedGroup)
-        {
-            if (changedGroup.IsExpanded)
+            foreach (var kp in Groups)
             {
-                foreach (var tab in Tabs)
+                var group = kp.Value;
+                if (string.IsNullOrEmpty(group.TabId)) continue;
+
+                if (group.IsExpanded && !group.IsPinned)
                 {
-                    if (tab.Groups.Contains(changedGroup))
+                    if (activeTabsTracker.Contains(group.TabId))
                     {
-                        foreach (var group in tab.Groups)
-                        {
-                            if (group != changedGroup && !group.IsPinned && group.IsExpanded)
-                            {
-                                group.IsExpanded = false;
-                            }
-                        }
-                        break;
+                        group.IsExpanded = false;
+                    }
+                    else
+                    {
+                        activeTabsTracker.Add(group.TabId);
                     }
                 }
-            }
-        }
-    }
-
-    private void ResetLayout()
-    {
-        foreach (var tab in Tabs)
-        {
-            foreach (var group in tab.Groups)
-            {
-                group.IsExpanded = true;
-                group.IsPinned = false;
             }
         }
     }

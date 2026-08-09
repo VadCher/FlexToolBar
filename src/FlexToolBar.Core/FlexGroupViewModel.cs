@@ -1,81 +1,108 @@
+using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Text.Json.Serialization;
 
-namespace FlexToolBar.Core;
-
-/// <summary>
-/// Represents the implementation of the IFlexGroupViewModel interface.
-/// </summary>
-public class FlexGroupViewModel : ViewModelBase, IFlexGroupViewModel
+namespace FlexToolBar.Core
 {
-    private string _groupId;
-    private string _header;
-    private string? _expandedHeader;
-    private object? _icon;
-    private bool _isExpanded = true;
-    private bool _isPinned = false;
-    private bool _pinVisible = true;
-
     /// <summary>
-    /// Initializes a new instance of the FlexGroupViewModel class.
+    /// Represents the cross-platform technical state tracking view model for a single functional group container.
     /// </summary>
-    /// <param name="groupId">The unique identifier for the group.</param>
-    /// <param name="header">The display header for the group.</param>
-    public FlexGroupViewModel(string groupId, string header)
+    public class FlexGroupViewModel : ViewModelBase
     {
-        _groupId = groupId;
-        _header = header;
-    }
+        private FlexToolBarViewModel? _parent;
+        public FlexGroupViewModel() { }
+        /// <summary>
+        /// Gets or sets the unique string identifier of the tab hosting this group.
+        /// Excluded from JSON to maintain a lean schema.
+        /// </summary>
+        [JsonIgnore]
+        public string TabId { get; set; } = string.Empty;
 
-    /// <inheritdoc />
-    public string GroupId
-    {
-        get => _groupId;
-        init => SetProperty(ref _groupId, value);
-    }
+        /// <summary>
+        /// Gets or sets the display header for the group.
+        /// </summary>
+        [JsonIgnore]
+        public string Header
+        {
+            get => field;
+            set => RaiseAndSetIfChanged(ref field, value);
+        } = string.Empty;
 
-    /// <inheritdoc />
-    public string Header
-    {
-        get => _header;
-        set => SetProperty(ref _header, value);
-    }
+        /// <summary>
+        /// Gets or sets the secondary header displayed when the group is expanded.
+        /// </summary>
+        [JsonIgnore]
+        public string? ExpandedHeader
+        {
+            get => field;
+            set => RaiseAndSetIfChanged(ref field, value);
+        }
 
-    /// <inheritdoc />
-    public string? ExpandedHeader
-    {
-        get => _expandedHeader;
-        set => SetProperty(ref _expandedHeader, value);
-    }
+        /// <summary>
+        /// Gets or sets the visual icon asset representing the group in its collapsed state.
+        /// </summary>
+        [JsonIgnore]
+        public object? Icon
+        {
+            get => field;
+            set => RaiseAndSetIfChanged(ref field, value);
+        }
 
-    /// <inheritdoc />
-    public object? Icon
-    {
-        get => _icon;
-        set => SetProperty(ref _icon, value);
-    }
+        /// <summary>
+        /// Gets or sets a value indicating whether the pinning toggle button is visible.
+        /// </summary>
+        [JsonIgnore]
+        public bool PinVisible
+        {
+            get => field;
+            set => RaiseAndSetIfChanged(ref field, value);
+        } = true;
 
-    /// <inheritdoc />
-    public bool IsExpanded
-    {
-        get => _isExpanded;
-        set => SetProperty(ref _isExpanded, value);
-    }
+        /// <summary>
+        /// Gets the dynamic collection of child interactive elements hosted inside this group workspace.
+        /// </summary>
+        [JsonIgnore]
+        public ObservableCollection<object> Items { get; } = new();
 
-    /// <inheritdoc />
-    public bool IsPinned
-    {
-        get => _isPinned;
-        set => SetProperty(ref _isPinned, value);
-    }
+        /// <summary>
+        /// Gets or sets whether this group panel layout container is currently expanded on screen.
+        /// </summary>
+        public bool IsExpanded
+        {
+            get => field;
+            set
+            {
+                // VADIM'S SPECIFICATION: Self-contained tab-boundary single expand execution engine
+                if (value && !field && _parent != null && _parent.IsSingleExpandGroup)
+                {
+                    foreach (var kp in _parent.Groups)
+                    {
+                        var target = kp.Value;
+                        if (target != this && target.TabId == this.TabId && !target.IsPinned && target.IsExpanded)
+                        {
+                            target.IsExpanded = false;
+                        }
+                    }
+                }
+                RaiseAndSetIfChanged(ref field, value);
+            }
+        } = true;
 
-    /// <inheritdoc />
-    public bool PinVisible
-    {
-        get => _pinVisible;
-        set => SetProperty(ref _pinVisible, value);
-    }
+        /// <summary>
+        /// Gets or sets whether this group is pinned, preventing automatic or manual collapsing actions.
+        /// </summary>
+        public bool IsPinned
+        {
+            get => field;
+            set => RaiseAndSetIfChanged(ref field, value);
+        } = false;
 
-    /// <inheritdoc />
-    public ObservableCollection<object> Items { get; } = new();
+        /// <summary>
+        /// Internally binds the group instance back to its root execution toolbar controller context.
+        /// </summary>
+        public void SetParent(FlexToolBarViewModel parentViewModel)
+        {
+            _parent = parentViewModel;
+        }
+    }
 }

@@ -1,10 +1,13 @@
-<Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://microsoft.com">
-    
-    <!-- Link all component axaml resource templates together -->
-    <StyleInclude Source="avares://FlexToolBar.Avalonia/ToolBar.Styles.axaml" />
-    <StyleInclude Source="avares://FlexToolBar.Avalonia/Tab.Styles.axaml" />
-    <StyleInclude Source="avares://FlexToolBar.Avalonia/FlexGroup.Styles.axaml" />
-    <StyleInclude Source="avares://FlexToolBar.Avalonia/Controls/FlexButton.Styles.axaml" />
-    
-</Styles>
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/FlexGroup.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/Controls/ToolBarSettingsFlexGroup.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/Controls/FlexButton.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/Controls/FlexToggleButton.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/Tab.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/ToolBar.Styles.axaml" />
+
+    </ResourceDictionary.MergedDictionaries>
+</ResourceDictionary>

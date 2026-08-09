@@ -1,66 +1,57 @@
-<Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:FlexToolBar.Avalonia">
-    
-    <Style Selector="local|FlexGroup">
-        <!-- Default out-of-the-box appearance tokens (fully customizable via styles) -->
-        <Setter Property="Background" Value="#F9F9F9"/>
-        <Setter Property="BorderBrush" Value="LightGray"/>
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ftb="clr-namespace:FlexToolBar.Avalonia">
+
+    <!-- Современная тема элемента управления FlexGroup для Avalonia 11/12 -->
+    <ControlTheme x:Key="{x:Type ftb:FlexGroup}" TargetType="ftb:FlexGroup">
+        
+        <!-- Сеттеры базовых свойств по умолчанию -->
+        <Setter Property="Background" Value="#E1E1E1"/>
+        <Setter Property="BorderBrush" Value="Red"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="4"/>
+        <!-- <Setter Property="Content" Value="True"/>  -->
         
-        <!-- DEFAULT CORE SEPARATOR TEMPLATE: Renders as a clean transparent layout spacer by default -->
         <Setter Property="SeparatorTemplate">
             <ControlTemplate>
                 <Border Background="Transparent" BorderBrush="Transparent" BorderThickness="0"/>
             </ControlTemplate>
         </Setter>
         
+        <!-- Основной визуальный каркас группы (Template) -->
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid>
-                    <!-- 1. Collapsed State: Large action button layout representation -->
-                    <Button x:Name="PART_CollapsedButton"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Stretch"
-                            Background="#EAEAEA"
-                            BorderBrush="Gray"
-                            BorderThickness="1"
-                            CornerRadius="3"
-                            Padding="{TemplateBinding Padding}"
-                            IsVisible="False">
+                <!-- ROOT ORIENTATION: Combined container shell and trailing separator layout -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Stretch">
+                    
+                    <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                         
-                        <Grid RowDefinitions="*,Auto">
-                            <ContentPresenter Grid.Row="0" Content="{TemplateBinding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            <TextBlock Grid.Row="1" Text="{TemplateBinding Header}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,2" FontSize="11" FontWeight="SemiBold"/>
-                        </Grid>
-                    </Button>
-
-                    <!-- 2. Expanded State: Monolithic layout with outer layout StackPanel -->
-                    <StackPanel x:Name="PART_ExpandedContainer" 
-                                Orientation="Horizontal" 
+                        <!-- Кнопка свернутого состояния -->
+                        <Button x:Name="PART_CollapsedButton"
+                                HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"
-                                IsVisible="True">
-                        
-                        <!-- THE SEPARATOR CONTROL: Stays OUTSIDE the group frame border context -->
-                        <ContentControl x:Name="PART_Separator"
-                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"
-                                        Template="{TemplateBinding SeparatorTemplate}"
-                                        VerticalAlignment="Stretch"
-                                        HorizontalAlignment="Stretch"/>
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Stretch"
+                                Background="#EAEAEA"
+                                BorderBrush="Gray"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid RowDefinitions="*,Auto">
+                                <ContentPresenter Grid.Row="0" Content="{TemplateBinding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="1" Text="{TemplateBinding Header}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,2" FontSize="11" FontWeight="SemiBold"/>
+                            </Grid>
+                        </Button>
 
-                        <!-- CORRECTED SKELETON: Border wraps ONLY the inner grid framework safely -->
-                        <Border Background="{TemplateBinding Background}"
+                        <!-- Контейнер развернутого состояния -->
+                        <Border x:Name="PART_ExpandedBorder"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="{TemplateBinding CornerRadius}"
                                 Padding="{TemplateBinding Padding}">
                             
                             <Grid RowDefinitions="*,Auto" ColumnDefinitions="Auto,*">
-                                
-                                <!-- [Row 0, Column 0]: Pin indicator action button -->
                                 <Button x:Name="PART_PinButton"
                                         Grid.Row="0" Grid.Column="0"
                                         Content="🖈"
@@ -75,7 +66,6 @@
                                         VerticalContentAlignment="Center"
                                         IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
                                 
-                                <!-- [Row 1, Column 0]: Collapse close action button -->
                                 <Button x:Name="PART_CloseButton" 
                                         Grid.Row="1" Grid.Column="0"
                                         Content="✕" 
@@ -88,13 +78,12 @@
                                         HorizontalContentAlignment="Center"
                                         VerticalContentAlignment="Center"/>
 
-                                <!-- [Row 0, Column 1]: User custom XAML control content container injection target -->
+                                <!-- Точка вставки содержимого (ваших кнопок и элементов внутри группы) -->
                                 <ContentPresenter Grid.Row="0" Grid.Column="1"
                                                   Content="{TemplateBinding Content}"
                                                   ContentTemplate="{TemplateBinding ContentTemplate}"
                                                   VerticalAlignment="Center"/>
 
-                                <!-- [Row 1, Column 1]: Bottom header display label -->
                                 <TextBlock x:Name="PART_BottomHeaderBlock"
                                            Grid.Row="1" Grid.Column="1"
                                            HorizontalAlignment="Center"
@@ -105,38 +94,51 @@
                                            IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                             </Grid>
                         </Border>
-                    </StackPanel>
-                </Grid>
+                    </Grid>
+
+                    <!-- THE SEPARATOR CONTROL: Разделитель между группами -->
+                    <ContentControl x:Name="PART_Separator"
+                                    Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"
+                                    Template="{TemplateBinding SeparatorTemplate}"
+                                    IsVisible="{TemplateBinding IsVisible}"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalAlignment="Stretch"/>
+                </StackPanel>
             </ControlTemplate>
         </Setter>
-    </Style>
 
-    <!-- State Layout Conditional Triggers Engine Context -->
-    <Style Selector="local|FlexGroup:collapsed /template/ Button#PART_CollapsedButton">
-        <Setter Property="IsVisible" Value="True" />
-    </Style>
-    <Style Selector="local|FlexGroup:collapsed /template/ StackPanel#PART_ExpandedContainer">
-        <Setter Property="IsVisible" Value="False" />
-    </Style>
+        <!-- ТРИГГЕРЫ И ПСЕВДОКЛАССЫ СОСТОЯНИЙ ГРУППЫ -->
+        <!-- Символ '^' автоматически подставляет тип ftb:FlexGroup -->
 
-    <Style Selector="local|FlexGroup:expanded /template/ Button#PART_CollapsedButton">
-        <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="local|FlexGroup:expanded /template/ StackPanel#PART_ExpandedContainer">
-        <Setter Property="IsVisible" Value="True" />
-    </Style>
-    
-    <Style Selector="local|FlexGroup:pinned /template/ Button#PART_CloseButton">
-        <Setter Property="IsVisible" Value="False" />
-    </Style>
+        <!-- Состояние: Свернуто -->
+        <Style Selector="^:collapsed /template/ Button#PART_CollapsedButton">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="^:collapsed /template/ Border#PART_ExpandedBorder">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
 
-    <!-- ================================================================= -->
-    <!-- AUTOMATED FIRST-CHILD KILL-SWITCH TRIGGER                         -->
-    <!-- Completely collapses the leftmost separator box to preserve origin edge alignment -->
-    <!-- ================================================================= -->
-    <Style Selector="local|FlexGroup:nth-child(1) /template/ ContentControl#PART_Separator">
-        <Setter Property="Width" Value="0" />
-        <Setter Property="IsVisible" Value="False" />
-    </Style>
+        <!-- Состояние: Развернуто -->
+        <Style Selector="^:expanded /template/ Button#PART_CollapsedButton">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="^:expanded /template/ Border#PART_ExpandedBorder">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        
+        <!-- Состояние: Закреплено -->
+        <Style Selector="^:pinned /template/ Button#PART_PinButton">
+            <Setter Property="Foreground" Value="#0066CC" />
+        </Style>
+        <Style Selector="^:pinned /template/ Button#PART_CloseButton">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
 
-</Styles>
+        <!-- Состояние: Скрыто -->
+        <Style Selector="^:hidden /template/ ContentControl#PART_Separator">
+            <Setter Property="Width" Value="0" />
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+    </ControlTheme>
+</ResourceDictionary>

@@ -1,18 +1,21 @@
-<Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:FlexToolBar.Avalonia">
-    
-    <Style Selector="local|ToolBar">
-        <!-- Default core background and frame for the entire global ribbon control -->
+  <ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ftb="clr-namespace:FlexToolBar.Avalonia">
+
+    <!-- Современная тема элемента управления ToolBar для Avalonia 11/12 -->
+    <ControlTheme x:Key="{x:Type ftb:ToolBar}" TargetType="ftb:ToolBar">
+        
+        <!-- Сеттеры базовых свойств по умолчанию -->
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="CornerRadius" Value="0"/>
         
+        <!-- Главный шаблон управления -->
         <Setter Property="Template">
             <ControlTemplate>
-                <!-- 1. GLOBAL MONOLITHIC CONTROLLER: Root layout wrapper container -->
+                <!-- GLOBAL MONOLITHIC CONTROLLER: Root layout wrapper container -->
                 <Border x:Name="PART_RootContainer"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
@@ -25,10 +28,7 @@
                     <!-- TWO-ROW OUTER GRID: Separates headers and active workspaces completely -->
                     <Grid RowDefinitions="Auto,*">
                         
-                        <!-- ================================================================= -->
-                        <!-- ROW 0: TAB STRIP HEADERS BORDER FRAME                             -->
-                        <!-- Pure single-layer container for wobble-free tab selection rails -->
-                        <!-- ================================================================= -->
+                        <!-- ROW 0: TAB STRIP HEADERS BORDER FRAME -->
                         <Border x:Name="PART_HeaderContainer"
                                 Grid.Row="0"
                                 HorizontalAlignment="Stretch"
@@ -36,22 +36,21 @@
                             
                             <TabStrip x:Name="PART_TabSelectionStrip"
                                       ItemsSource="{TemplateBinding Tabs}"
+                                      SelectedValueBinding="{Binding (ftb:Tab.TabId)}"
+                                      SelectedValue="{Binding ViewModel.SelectedTabId, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
                                       IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}"
                                       Padding="0"
                                       Margin="0"
                                       Background="Transparent">
                                 <TabStrip.ItemTemplate>
-                                    <DataTemplate x:DataType="local:Tab">
+                                    <DataTemplate x:DataType="ftb:Tab">
                                         <TextBlock Text="{Binding Header}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </DataTemplate>
                                 </TabStrip.ItemTemplate>
                             </TabStrip>
                         </Border>
                         
-                        <!-- ================================================================= -->
-                        <!-- ROW 1: ACTIVE RIBBON CONTENT BORDER FRAME                         -->
-                        <!-- This Border acts as the single styleable chassis for tool groups  -->
-                        <!-- ================================================================= -->
+                        <!-- ROW 1: ACTIVE RIBBON CONTENT BORDER FRAME -->
                         <Border x:Name="PART_ContentContainer"
                                 Grid.Row="1"
                                 VerticalAlignment="Stretch"
@@ -66,12 +65,11 @@
                                     <ColumnDefinition Width="*"/>    <!-- 3: Core ScrollViewer Content Box -->
                                     <ColumnDefinition Width="Auto"/> <!-- 4: Dynamic Inner Right Gap -->
                                     <ColumnDefinition Width="Auto"/> <!-- 5: Right Arrow Button -->
-                                    <ColumnDefinition Width="Auto"/> <!-- 6: Fixed Right Edge Padding -->
                                 </Grid.ColumnDefinitions>
 
                                 <!-- [Col 0]: Fixed Left app margin linked to inherited spacing property -->
                                 <Border Grid.Column="0" 
-                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
 
                                 <!-- [Col 1]: Left Scroll Action Button -->
                                 <Button x:Name="PART_ScrollLeftButton"
@@ -84,7 +82,7 @@
 
                                 <!-- [Col 2]: Inner Left Gap - collapses to 0 when arrow is hidden -->
                                 <Border Grid.Column="2" 
-                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
+                                        Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
                                         IsVisible="{Binding #PART_ScrollLeftButton.IsVisible}"/>
 
                                 <!-- [Col 3]: Global Scroll Viewport carrying active presenters -->
@@ -100,7 +98,7 @@
                                 
                                 <!-- [Col 4]: Inner Right Gap - collapses to 0 when arrow is hidden -->
                                 <Border Grid.Column="4" 
-                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
+                                        Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
                                         IsVisible="{Binding #PART_ScrollRightButton.IsVisible}"/>
 
                                 <!-- [Col 5]: Right Scroll Action Button -->
@@ -111,61 +109,69 @@
                                         HorizontalContentAlignment="Center"
                                         VerticalContentAlignment="Center"
                                         IsVisible="False"/>
-
-                                <!-- [Col 6]: Fixed Right app margin linked to inherited spacing property -->
-                                <Border Grid.Column="6" 
-                                        Width="{Binding (local:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
                             </Grid>
                         </Border>
                     </Grid>
                 </Border>
             </ControlTemplate>
         </Setter>
-    </Style>
+        <!-- ================================================================= -->
+        <!-- ВЛОЖЕННЫЕ СТИЛИ КОМПОНЕНТОВ (ВНУТРИ SCOPE ТЕМЫ TOOLBAR)           -->
+        <!-- ================================================================= -->
+
+        <!-- Настройка отступов контейнера вкладок -->
+        <Style Selector="^ /template/ Border#PART_HeaderContainer">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="4,2,4,0"/>
+        </Style>
+
+        <!-- Настройка внешнего вида основного шасси риббона -->
+        <Style Selector="^ /template/ Border#PART_ContentContainer">
+            <Setter Property="Background" Value="#F3F3F3"/>
+            <Setter Property="BorderBrush" Value="#DCDCDC"/>
+            <Setter Property="BorderThickness" Value="0,1,0,1"/>
+            <Setter Property="Padding" Value="0,4,0,4"/>
+        </Style>
+
+        <!-- Единый стиль для левой и правой кнопок прокрутки -->
+        <Style Selector="^ /template/ Button#PART_ScrollLeftButton, ^ /template/ Button#PART_ScrollRightButton">
+            <Setter Property="Padding" Value="4,0,4,0"/>
+            <Setter Property="Background" Value="#F9F9F9"/>
+            <Setter Property="BorderBrush" Value="LightGray"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+
+    </ControlTheme> <!-- Конец темы ftb:ToolBar -->
 
     <!-- ================================================================= -->
-    <!-- CORE OUT-OF-THE-BOX RIBBON VISUAL CHASSIS DEFAULTS                -->
+    <!-- НОВАЯ ТЕМА ДЛЯ ВКЛАДОК (ЛЕГАЛЬНО ДЛЯ RESOURCE DICTIONARY)         -->
+    <!-- Эта тема автоматически применится ко всем вкладкам в Тулбаре      -->
     <!-- ================================================================= -->
-    
-    <!-- Tab headers background padding - tightly compressed for desktop grids -->
-    <Style Selector="local|ToolBar /template/ Border#PART_HeaderContainer">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Padding" Value="4,2,4,0"/>
-    </Style>
-
-    <!-- Force total compression on TabStrip items directly inside our ToolBar template scope -->
-    <Style Selector="local|ToolBar TabStrip TabStripItem">
+    <ControlTheme x:Key="{x:Type TabStripItem}" TargetType="TabStripItem">
+        <!-- Базовые сеттеры, которые теперь МОЖНО переопределить в темах -->
         <Setter Property="MinHeight" Value="0"/>
         <Setter Property="Height" Value="24"/>
         <Setter Property="Padding" Value="10,0"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="FontSize" Value="11"/>
-    </Style>
+        
+        <!-- Пробиваем дефолтную высоту контент-презентера платформы -->
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ContentPresenter x:Name="PART_ContentPresenter"
+                                  Background="{TemplateBinding Background}"
+                                  BorderBrush="{TemplateBinding BorderBrush}"
+                                  BorderThickness="{TemplateBinding BorderThickness}"
+                                  CornerRadius="{TemplateBinding CornerRadius}"
+                                  Content="{TemplateBinding Content}"
+                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                  Padding="{TemplateBinding Padding}"
+                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 
-    <!-- Deep-dive override to kill the platform-specific default container height blocks -->
-    <Style Selector="local|ToolBar TabStrip TabStripItem /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="MinHeight" Value="0"/>
-        <Setter Property="Height" Value="24"/>
-        <Setter Property="Padding" Value="10,0"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-    </Style>
-    
-    <!-- Unified, gorgeous out-of-the-box ribbon container plate -->
-    <Style Selector="local|ToolBar /template/ Border#PART_ContentContainer">
-        <Setter Property="Background" Value="#F3F3F3"/> <!-- Solid modern canvas plate -->
-        <Setter Property="BorderBrush" Value="#DCDCDC"/>
-        <Setter Property="BorderThickness" Value="0,1,0,1"/> <!-- Pure top and bottom separating rails -->
-        <Setter Property="Padding" Value="0,4,0,4"/> <!-- Breathing room for internal groups -->
-    </Style>
-
-    <!-- CORE DEFAULT STYLING FOR NAVIGATION BUTTONS -->
-    <Style Selector="local|ToolBar Button#PART_ScrollLeftButton, local|ToolBar Button#PART_ScrollRightButton">
-        <Setter Property="Padding" Value="4,0,4,0"/>
-        <Setter Property="Background" Value="#F9F9F9"/>
-        <Setter Property="BorderBrush" Value="LightGray"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="4"/>
-        <Setter Property="Foreground" Value="#333333"/>
-    </Style>
-
-</Styles>
+</ResourceDictionary>

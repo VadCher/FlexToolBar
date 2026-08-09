@@ -22,8 +22,8 @@
     <!-- Establishing connection to the Core architecture layer -->
     <ProjectReference Include="..\FlexToolBar.Core\FlexToolBar.Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- Explicitly ensuring all Avalonia XAML files are compiled as assembly resources -->
-    <AvaloniaResource Include="**\*.axaml" />
-  </ItemGroup>
+<ItemGroup>
+  <AvaloniaResource Include="**\*.axaml"/>
+</ItemGroup>
+
 </Project>

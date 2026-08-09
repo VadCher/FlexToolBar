@@ -23,6 +23,13 @@ FlexToolBar is a high-performance, lightweight hybrid layout controller designed
 - `double ToolBar.GroupSpacing` (Attached Property, Default: `6.0`): Visually drives layout padding gaps. Registered with visual tree inheritance enabled (`inherits: true`).
 - `global::Avalonia.Controls.Dock ToolBar.PanelEdge` (Styled Property, Default: `Dock.Top`): Toggles screen edge attachment context.
 - `ICommand ResetLayoutCommand` (UI Internal Command): Executes direct hardware asset resets utilizing the framework's internal `ClearValue` mechanisms. Property values seamlessly cascade back into the core model registry via active TwoWay data bindings.
+- **The Seamless Tab Persistence Mandate (SelectedValue Law):** To guarantee that the active workspace context never shifts or drops to index zero during destructive runtime theme stylesheet hot-swapping transactions, the template-driven `TabStrip` MUST bind its active state declaratively using the native string identity pipeline:
+  ```xml
+  <TabStrip x:Name="PART_TabSelectionStrip"
+            ItemsSource="{TemplateBinding Tabs}"
+            SelectedValueBinding="{Binding (ftb:Tab.TabId)}"
+            SelectedValue="{Binding ViewModel.SelectedTabId, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" />
+  ```
 
 ### Tab
 - Represents a structural container of `FlexGroup` instances. Inherits from `HeaderedItemsControl`.
@@ -46,10 +53,12 @@ FlexToolBar is a high-performance, lightweight hybrid layout controller designed
 ## 3. Layout Lifecycle & Serialization Pipeline
 
 1. **Phase Separation Engine**: During the control's boot phase (XAML parsing), visual UI components (`FlexGroup`) initialize their internal concrete `FlexGroupViewModel` instances locally, caching compile-time XAML literal values and stylesheet default metrics natively.
-2. **Top-Down Registry Assembly**: The true orchestration handshake executes strictly inside the root **`OnLoaded`** method of the `ToolBar` control before the configuration file is read. The master `ToolBar` iterates through its static `Tabs` collection, discovers all child `FlexGroup` containers, injects the corresponding `TabId` markers, and registers their live `GroupViewModel` references directly into the global flat dictionary registry via unique `GroupId` keys.
-3. **In-Place Population & IsEdited Reset**: Immediately following assembly, the layout configuration JSON file is processed via the native .NET `JsonObjectCreationHandling.Populate` pipeline. Property mutations stream directly onto the active bound core models. Upon successful completion of this layout generation sequence, `ViewModel.ResetIsEdited()` is explicitly invoked to flush false-positive tracking flags caused by file deserialization steps, establishing a clean operational baseline (`IsEdited == false`).
-4. **First-Boot Forced Baseline**: If the physical JSON configuration file does not exist on disk (cold startup phase), the serialization engine instantly forces an explicit execution of `GetLayoutJson()`. The compiled XAML defaults are instantly written to disk as an absolute blueprint snapshot, followed by an immediate execution of `ResetIsEdited()`.
-5. **Crash Resilience (Debounced Auto-Save)**: Built-in background serialization driven by a native `DispatcherTimer` running at `DispatcherPriority.Background`.
+2. **Top-Down Registry Assembly**: The true orchestration handshake executes strictly inside the root `OnLoaded` method of the `ToolBar` control before the configuration file is read. The master `ToolBar` iterates through its static `Tabs` collection, discovers all child `FlexGroup` containers, injects the corresponding `TabId` markers, links the parent view model references, and registers their live `GroupViewModel` references directly into the global flat dictionary registry via unique `GroupId` keys.
+3. **Symmetric Reflection Transmission**: The configuration JSON file is processed inside the `LoadLayout` method via standard `JsonSerializer.Deserialize` into a clean, short-lived isolated memory layout snapshot. Property mutations and state configurations stream back into the active, pre-assembled live object tree matrix utilizing an optimized, single-loop recursive properties reflection carrier (`CopyProperties`).
+4. **The Enumerable KeyValuePair Alignment Rule**: To strictly protect and maintain live framework UI pointer references in memory, the reflection engine ignores generic collection overrides. It processes structural boundaries through a unified parallel `IEnumerable` iterator. If an encountered node implements the explicit generic layout contract signature of `KeyValuePair<TKey, TValue>`, the engine automatically extracts the internal `Value` property contexts and drops down recursively to perform an in-place mutation of primitive state flags, securing a Zero Garbage Collection runtime footprint.
+5. **Proactive Invalidation Safeguard**: To shield the platform against infinite auto-save disk loop cycles caused by rapid deserialization field mutations or unexpected file-system blocks, an explicit invocation of `ViewModel.ResetIsEdited()` is strictly forced at the absolute entry boundary of the loading transaction, immediately followed by a secondary flush call upon successful data transmission.
+6. **First-Boot Forced Baseline**: If the physical JSON configuration file does not exist on disk (cold startup phase), the serialization engine instantly forces an explicit layout snapshot execution to disk as an absolute blueprint, followed by an immediate execution of `ResetIsEdited()`.
+7. **Crash Resilience (Debounced Auto-Save)**: Built-in background serialization driven by a native `DispatcherTimer` running at `DispatcherPriority.Background`.
    - Activates reactively only when the core view model fires an explicit property notification for the global `IsEdited` state flag.
    - Uses a strict **Debounce pattern** via `Stop()/Start()` sequence to group rapid user interaction cycles and minimize SSD write wear.
    - Flushes state primitives to disk after a cooling interval defined by `AutoSaveInterval` (Default: 5 seconds). Setting this property to `TimeSpan.Zero` completely disables the background timer.
@@ -73,34 +82,95 @@ Tracked container carrying state variables for a single user group instance.
 
 ## 5. Styling, Themes & Extensible Assets
 
-Every control in `FlexToolBar` is a `TemplatedControl`, meaning its look and feel is completely decoupled from logic. The base template styles (`FlexToolBar.axaml`) contain only structural grid skeletal definitions and logical bindings.
+Every control in `FlexToolBar` is a `TemplatedControl` configured via modern `ControlTheme` dictionaries, meaning its look and feel is completely decoupled from logic. The base themes contain only structural grid skeletal definitions and logical bindings, ensuring `DataContext` remains untouched for application developers [1.1].
 
 ### Theme Architecture Rules
-- **Zero Hardcoded Spacing**: Standalone visual properties like `Margin`, `Padding`, `FontSize`, and `MinHeight` must not be hardcoded inside base control templates. They must use template bindings (`Padding="{TemplateBinding Padding}"`) or be defined strictly inside dedicated theme files within the `Themes/` directory.
-- **Autonomous Collapsing**: Layout grids inside components must use `Auto` dimensions for control columns (`ColumnDefinitions="Auto,*"`). Combined with `IsVisible="False"`, this ensures that control panels collapse completely, resetting margins to absolute zero when buttons are hidden.
-- **App-Level Theming**: The core library file `FlexToolBar.axaml` includes only essential layout mechanics. The app developer explicitly opts into a specific visual appearance by attaching a layout theme file (e.g., `Themes/Compact.Styles.axaml`) inside their `App.axaml` stylesheet scope.
-- **Direct Template Targetry**: Custom theme files manipulate internal named template parts (e.g., `ToggleButton#PART_PinButton`) using direct template scope selectors (`/template/`), leaving the core C# layout classes decoupled from granular pixel properties.
+- **Zero Hardcoded Spacing**: Standalone visual properties like `Margin`, `Padding`, `FontSize`, and `MinHeight` must not be hardcoded inside base control templates. They must use template bindings (`Padding="{TemplateBinding Padding}"`) or be defined strictly inside dedicated theme files within the `Themes/` directory [1.1].
+- **Autonomous Collapsing**: Layout grids inside components must use `Auto` dimensions for control columns (`ColumnDefinitions="Auto,*"`). Combined with `IsVisible="False"`, this ensures that control panels collapse completely, resetting margins to absolute zero when buttons are hidden [1.1].
+- **App-Level Theming**: The core library file `FlexToolBar.axaml` is a root `ResourceDictionary` linking concrete component `ControlTheme` assets. The app developer explicitly opts into a specific visual appearance by attaching a layout theme file inside their `App.axaml` stylesheet scope [1.1].
+- **Direct Template Targetry**: Custom theme files manipulate internal named template parts using nested template scope selectors (`^ /template/`), leaving the core C# layout classes decoupled from granular pixel properties [1.1].
 
 ### Visual States (Pseudo-classes)
-- `:expanded` — Active when `IsExpanded == true`. Renders the full control layout.
-- `:collapsed` — Active when `IsExpanded == false`. Renders the group as a single large action button.
-- `:pinned` — Active when `IsPinned == true`. Modifications apply to the pinning indicator state and hide close buttons.
+- `:expanded` — Active when `IsExpanded == true`. Renders the full control layout [1.1].
+- `:collapsed` — Active when `IsExpanded == false`. Renders the group as a single large action button [1.1].
+- `:pinned` — Active when `IsPinned == true`. Modifications apply to the pinning indicator state [1.1].
+- `:hidden` — Active when the control's `IsVisible` property drops to `false`, forcing adjacent separators to collapse layout metrics completely [1.1].
 
 ### Standard Template Parts (Targetable via XAML Name)
-- `PART_CollapsedButton` (`Button`) — Root wrapper visible only in the `:collapsed` state.
-- `PART_ExpandedContainer` (`Border`) — Outer border surrounding content only in the `:expanded` state.
-- `PART_PinButton` (`ToggleButton`) — Pin/unpin interface element.
-- `PART_CloseButton` (`Button`) — Collapse/close action element.
-- `PART_BottomHeaderBlock` (`TextBlock`) — Renders `ExpandedHeader` at the bottom of the group.
-- `PART_TabSelectionStrip` (`TabStrip`) — Global tab switching bar located at the root ToolBar level.
-- `PART_TabScrollViewer` (`ScrollViewer`) — Global horizontal viewport framework carrying active presenters.
-- `PART_ScrollLeftButton` (`Button`) — Touch-friendly left navigation snap action element.
-- `PART_ScrollRightButton` (`Button`) — Touch-friendly right navigation snap action element.
-- `PART_Separator` (`ContentControl`) — Layout spacing separator configured per individual `FlexGroup`.
+- `PART_CollapsedButton` (`Button`) — Root wrapper visible only in the `:collapsed` state [1.1].
+- `PART_ExpandedBorder` (`Border`) — Outer border surrounding content only in the `:expanded` state [1.1].
+- `PART_PinButton` (`Button`) — Adaptive pin/unpin interface button element [1.1].
+- `PART_CloseButton` (`Button`) — Collapse/close action element [1.1].
+- `PART_BottomHeaderBlock` (`TextBlock`) — Renders `ExpandedHeader` at the bottom of the group [1.1].
+- `PART_TabSelectionStrip` (`TabStrip`) — Global tab switching bar driven by type-safe `SelectedValue` data bindings [1.1].
+- `PART_TabScrollViewer` (`ScrollViewer`) — Global horizontal viewport framework carrying active presenters [1.1].
+- `PART_ScrollLeftButton` (`Button`) — Touch-friendly left navigation snap action element [1.1].
+- `PART_ScrollRightButton` (`Button`) — Touch-friendly right navigation snap action element [1.1].
+- `PART_Separator` (`ContentControl`) — Trailing layout spacing separator configured per individual `FlexGroup` [1.1].
 
 ### Group Separator Pipeline
-- **First-Child Kill-Switch:** The leftmost separator control within a tab collection context automatically forces its width to zero and hides itself via a native `:nth-child(1)` compiler selector. This guarantees pristine vertical alignment with the static tab header rails out-of-the-box, while all subsequent groups cleanly present their custom templates.
+- **Adaptive Trailing Spacing:** Individual `FlexGroup` containers manage layout gaps using a right-side trailing `PART_Separator` [1.1]. If a control triggers the `:hidden` pseudo-class via business logic, its custom separator width automatically collapses to absolute zero natively, allowing the adjacent group to seamlessly slide left and align perfectly with the static left padding boundary [1.1].
 
 ### Navigation Assets Injection API
-- **ScrollLeftContent & ScrollRightContent** (Type: `object`, Default: `"◀"` / `"▶"`): Declared at the root `ToolBar` dependency property registry. Allows styling engines to seamlessly inject vector geometry (`Path`), custom SVG graphics, or stylized Unicode glyphs without touching the base source templates.
-- **Elastic Default Button Bounds**: Core navigation buttons inside `ToolBar.Styles.axaml` completely erase explicit width boundaries (`Width="Auto"`). They utilize a default style container specifying `Padding="4,0,4,0"`, which forces the button framework border to dynamically stretch or shrink to safely hug the shape of any injected glyph context natively.
+- **ScrollLeftContent & ScrollRightContent** (Type: `object`, Default: `"◀"` / `"▶"`): Declared at the root `ToolBar` dependency property registry [1.1]. Allows styling engines to seamlessly inject vector geometry (`Path`), custom SVG graphics, or stylized Unicode glyphs without touching the base source templates [1.1].
+- **Elastic Default Button Bounds**: Core navigation buttons inside `ToolBar.Styles.axaml` completely erase explicit width boundaries (`Width="Auto"`). They utilize a default style container specifying `Padding="4,0,4,0"`, which forces the button framework border to dynamically stretch or shrink to safely hug the shape of any injected glyph context natively [1.1].
+
+## 6. Resource Dictionary & Hybrid Theme Swapping Architecture
+
+To eliminate layout compilation conflicts and maximize rendering performance while keeping active tab navigation rock-solid, the architecture implements a **Hybrid Swapping Pipeline** combining static resource dictionaries with reactive styles cascading engines [1.1].
+
+### 1. The Pure Monolithic Dictionary Mandate
+The core library entry file `FlexToolBar.axaml` MUST be implemented strictly as a naked `ResourceDictionary` [1.1]. It operates as a consolidated cross-assembly resource gateway using clean `ResourceInclude` nodes to publish default themes into the global application scope:
+```xml
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/FlexGroup.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/Controls/ToolBarSettingsFlexGroup.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/Controls/FlexButton.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/Controls/FlexToggleButton.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/Tab.Styles.axaml" />
+        <ResourceInclude Source="avares://FlexToolBar.Avalonia/ToolBar.Styles.axaml" />
+
+    </ResourceDictionary.MergedDictionaries>
+</ResourceDictionary>
+```
+
+### 2. Explicit Inheritance Coupling (StaticResource Law)
+Derived out-of-the-box system components (`ToolBarSettingsFlexGroup`) must inherit the exact structural templates and interactive visual states of the base container by declaring a type-safe `BasedOn` relationship using compile-time lookups:
+```xml
+<ControlTheme x:Key="{x:Type ftb:ToolBarSettingsFlexGroup}" 
+              TargetType="ftb:ToolBarSettingsFlexGroup" 
+              BasedOn="{StaticResource {x:Type ftb:FlexGroup}}" />
+```
+
+### 3. The Protected DataContext Encapsulation Principle
+Every out-of-the-box system component must guarantee absolute immunity against external data context overrides [1.1]. The template layout grid forces a local data context redirection loop back into the master workspace core safely within the isolated `DataTemplate` boundary scope, keeping the host element context unpolluted [1.1]. All underlying property mutations execute via type-safe root tree bindings:
+```xml
+Value="{Binding ViewModel.GroupSpacing, RelativeSource={RelativeSource AncestorType=ftb:ToolBar}, Mode=TwoWay}"
+```
+
+### 4. Static Singleton Theme Registry (`ToolBarThemeManager`)
+To completely bypass OS-specific binary layer scanning constraints under Linux/Ubuntu environments, theme asset discovery completely abandons implicit directory walking [1.1]. All valid assets map explicitly into an isolated, memory-resident static dictionary registry pairing unique string tokens with type-safe `Uri` resource links:
+- Pre-installed core library themes (`Compact`, `Green`) seed the manager automatically during static constructor initialization routines [1.1].
+- Application developers are provided a clean, explicit public API to register custom assets dynamically from the host assembly scope at any stage of the lifecycle:
+  ```csharp
+  ToolBarThemeManager.RegisterTheme("Light.Dark", "avares://Notepad/Themes/Light.Dark.ToolBar.Theme.axaml");
+  ```
+
+### 5. Cascading Overrides Sheets (`<Styles>`)
+Dynamic modifier packages (e.g. `Compact.ToolBar.Theme.axaml`) MUST be implemented using clean, flat `<Styles>` collection containers instead of resource dictionaries [1.1]. This architecture completely eliminates `ControlTheme` cyclic inheritance deadlocks and allows micro-stylesheets to override operational look-and-feel properties using pure type selectors without declaring redundant global dictionary resource keys [1.1]:
+```xml
+<Styles xmlns="https://github.com" xmlns:ftb="clr-namespace:FlexToolBar.Avalonia">
+    <Style Selector="ftb|FlexGroup">
+        <Setter Property="Padding" Value="2,1,2,1"/>
+    </Style>
+</Styles>
+```
+
+### 6. The Atomic Style Swapping Transaction Contract
+Runtime theme switching executes within the `ToolBar.cs` orchestration layer by manipulating the local reactive `this.Styles` collection. The process follows a strict transaction sequence:
+- **Wipe Phase**: Executing `this.Styles.Clear()` instantly washes away the custom style sheet layer, forcing the Avalonia engine to fall back onto the global unified application resources template baseline with zero layout creation overhead [1.1].
+- **Default Check**: If the target state is `"Default"`, the thread immediately returns, concluding the transaction with optimal processor cycles efficiency [1.1].
+- **Inject Phase**: The requested theme name extracts its target `Uri` from the static memory registry at `O(1)` performance [1.1]. The path encapsulates inside a native `StyleInclude` token and injects into the active local styles collection, forcing an instantaneous, ripple-free visual tree layout recalculation while the active tab remains safely frozen in place [1.1].

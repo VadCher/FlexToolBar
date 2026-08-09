@@ -1,108 +1,148 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections;
+using System.IO;
+using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace FlexToolBar.Core;
-
-public class FlexGroupState
+namespace FlexToolBar.Core
 {
-    public string GroupId { get; set; } = string.Empty;
-    public bool IsExpanded { get; set; }
-    public bool IsPinned { get; set; }
-}
-
-public class FlexToolbarState
-{
-    public double GroupSpacing { get; set; } = 6.0;
-    public string ActiveThemeName { get; set; } = "Default";
-    public string SelectedTabId { get; set; } = string.Empty;
-    public string PanelEdge { get; set; } = "Top";
-
-    public bool IsSingleExpandMode { get; set; }
-
-    public List<FlexGroupState> Groups { get; set; } = new();
-}
-
-/// <summary>
-/// Manages saving and loading of the toolbar layout state.
-/// </summary>
-public class FlexLayoutManager
-{
-    private static readonly JsonSerializerOptions SerializerOptions = new()
+    public class FlexLayoutManager
     {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    public string SaveLayout(IFlexToolBarViewModel viewModel)
-    {
-        ArgumentNullException.ThrowIfNull(viewModel);
-
-        // SAVE: Persist global layout configurations directly alongside the item metrics
-        var state = new FlexToolbarState
+        private static readonly JsonSerializerOptions SerializerOptions = new()
         {
-            IsSingleExpandMode = viewModel.IsSingleExpandGroup,
-            SelectedTabId = viewModel.SelectedTabId,
-            GroupSpacing = viewModel.GroupSpacing,
-            ActiveThemeName = viewModel.ActiveThemeName,
-            PanelEdge = viewModel.PanelEdge,
+            WriteIndented = true,
+            IgnoreReadOnlyFields = true,
+            IgnoreReadOnlyProperties = true,
+            IncludeFields = false,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        foreach (var tab in viewModel.Tabs)
+        private string GetFilePath(string autoSaveId)
         {
-            foreach (var group in tab.Groups)
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{autoSaveId}.json");
+        }
+
+        public void SaveLayout(FlexToolBarViewModel viewModel, string autoSaveId)
+        {
+            if (viewModel == null || string.IsNullOrWhiteSpace(autoSaveId)) return;
+
+            viewModel.ResetIsEdited();
+
+            try
             {
-                if (!string.IsNullOrEmpty(group.GroupId))
-                {
-                    state.Groups.Add(new FlexGroupState
-                    {
-                        GroupId = group.GroupId,
-                        IsExpanded = group.IsExpanded,
-                        IsPinned = group.IsPinned
-                    });
-                }
+                string json = JsonSerializer.Serialize(viewModel, SerializerOptions);
+                File.WriteAllText(GetFilePath(autoSaveId), json);
+            }
+            catch { }
+        }
+
+        public bool LoadLayout(FlexToolBarViewModel viewModel, string autoSaveId)
+        {
+            if (viewModel == null || string.IsNullOrWhiteSpace(autoSaveId)) return false;
+
+            viewModel.ResetIsEdited();
+
+            string filePath = GetFilePath(autoSaveId);
+            if (!File.Exists(filePath)) return false;
+
+            try
+            {
+                string json = File.ReadAllText(filePath);
+
+                var testViewModel = JsonSerializer.Deserialize<FlexToolBarViewModel>(json, SerializerOptions);
+                if (testViewModel == null) return false;
+
+                CopyProperties(testViewModel, viewModel);
+
+                viewModel.ResetIsEdited();
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
             }
         }
-
-        return JsonSerializer.Serialize(state, SerializerOptions);
-    }
-
-    public void LoadLayout(IFlexToolBarViewModel viewModel, string json)
-    {
-        ArgumentNullException.ThrowIfNull(viewModel);
-        if (string.IsNullOrWhiteSpace(json)) return;
-
-        FlexToolbarState? state;
-        try
+        
+        public void DeleteLayout(string autoSaveId)
         {
-            state = JsonSerializer.Deserialize<FlexToolbarState>(json, SerializerOptions);
-        }
-        catch (JsonException) { return; }
-
-        if (state == null) return;
-
-        // RESTORE: Synchronize the global states and themes back to core view model
-        viewModel.SelectedTabId = state.SelectedTabId;
-        viewModel.IsSingleExpandGroup = state.IsSingleExpandMode;
-        viewModel.GroupSpacing = state.GroupSpacing > 0 ? state.GroupSpacing : 6.0; // Secure boundary fallback
-        viewModel.PanelEdge = !string.IsNullOrEmpty(state.PanelEdge) ? state.PanelEdge : "Top";
-        viewModel.ActiveThemeName = !string.IsNullOrEmpty(state.ActiveThemeName) ? state.ActiveThemeName : "Default";
-
-        if (state.Groups == null) return;
-
-        var groupStateMap = state.Groups
-            .Where(g => !string.IsNullOrEmpty(g.GroupId))
-            .ToDictionary(g => g.GroupId, g => g);
-
-        foreach (var tab in viewModel.Tabs)
-        {
-            foreach (var group in tab.Groups)
+            if (string.IsNullOrWhiteSpace(autoSaveId)) return;
+            try
             {
-                if (!string.IsNullOrEmpty(group.GroupId) && groupStateMap.TryGetValue(group.GroupId, out var groupState))
+                string filePath = GetFilePath(autoSaveId);
+                if (File.Exists(filePath))
                 {
-                    group.IsExpanded = groupState.IsExpanded;
-                    group.IsPinned = groupState.IsPinned;
+                    File.Delete(filePath);
+                }
+            }
+            catch { }
+        }
+
+        private static void CopyProperties(object src, object target)
+        {
+            if (src == null || target == null) return;
+
+            Type type = src.GetType();
+            if (type != target.GetType()) throw new ArgumentException("Arguments have different types.");
+
+            foreach (PropertyInfo info in type.GetProperties())
+            {
+                if (info.GetCustomAttributes(typeof(JsonIgnoreAttribute), false).Length > 0) continue;
+                if (!info.CanRead) continue;
+
+                object? srcValue = info.GetValue(src, null);
+                if (srcValue == null) continue;
+
+                if (srcValue is IEnumerable srcEnum && info.PropertyType != typeof(string))
+                {
+                    var targetEnum = info.GetValue(target, null) as IEnumerable;
+                    if (targetEnum != null)
+                    {
+                        IEnumerator srcIterator = srcEnum.GetEnumerator();
+                        IEnumerator targetIterator = targetEnum.GetEnumerator();
+
+                        while (srcIterator.MoveNext() && targetIterator.MoveNext())
+                        {
+                            object srcCurrent = srcIterator.Current;
+                            object targetCurrent = targetIterator.Current;
+
+                            if (srcCurrent == null || targetCurrent == null) continue;
+
+                            Type currentType = srcCurrent.GetType();
+                            if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                            {
+                                object? key = currentType.GetProperty("Key")?.GetValue(srcIterator.Current, null);
+                                object? srcChild = currentType.GetProperty("Value")?.GetValue(srcIterator.Current, null);
+
+                                object? targetChild = currentType.GetProperty("Value")?.GetValue(targetIterator.Current, null);
+
+                                if (srcChild != null && targetChild != null)
+                                {
+                                    CopyProperties(srcChild, targetChild);
+                                }
+                            }
+                            else
+                            {
+                                CopyProperties(srcCurrent, targetCurrent);
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                if (info.CanWrite)
+                {
+                    if (!info.PropertyType.IsPrimitive && info.PropertyType != typeof(string) && !info.PropertyType.IsValueType)
+                    {
+                        object? targetValue = info.GetValue(target, null);
+                        if (targetValue != null)
+                        {
+                            CopyProperties(srcValue, targetValue);
+                            continue;
+                        }
+                    }
+
+                    info.SetValue(target, srcValue, null);
                 }
             }
         }

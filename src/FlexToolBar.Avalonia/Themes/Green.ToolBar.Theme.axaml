@@ -1,0 +1,16 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ftb="clr-namespace:FlexToolBar.Avalonia">
+
+        <!-- GREEN COLOR PALETTE INJECTION -->
+    <Style Selector="ftb|FlexGroup">
+        <Setter Property="Background" Value="#E2F0D9"/>
+        <Setter Property="BorderBrush" Value="#385723"/>
+    </Style>
+
+    <Style Selector="ftb|ToolBarSettingsFlexGroup">
+        <Setter Property="Background" Value="#E2F0D9"/>
+        <Setter Property="BorderBrush" Value="#385723"/>
+    </Style>
+
+</Styles>
