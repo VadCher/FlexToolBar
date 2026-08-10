@@ -7,8 +7,9 @@
         <Setter Property="Padding" Value="0"/>
     </Style>
 
-    <Style Selector="ftb|FlexGroup">
+    <Style Selector=":is(ftb|FlexGroup)">
         <Setter Property="Padding" Value="2,1,2,1"/>
+        <Setter Property="Background" Value="#FFCBF816"/>
     </Style>
 
     <Style Selector="ftb|FlexButton">

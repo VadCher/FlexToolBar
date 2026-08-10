@@ -8,18 +8,15 @@
         
         <Setter Property="ContentTemplate">
             <DataTemplate>
-                <!-- Compact 3-Column Configuration Console Area -->
                 <Grid DataContext="{Binding ViewModel, RelativeSource={RelativeSource AncestorType=ftb:ToolBar}}"
                       ColumnDefinitions="Auto,Auto,Auto" RowDefinitions="*,*" Margin="2">
                     
-                    <!-- COLUMN 1: Spacing Slider (Flat O(1) tracking) -->
                     <StackPanel Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,10,0">
                         <TextBlock Text="Зазоры панели" FontSize="10" Foreground="Gray" HorizontalAlignment="Center" Margin="0,0,0,2"/>
                         <Slider Minimum="2" Maximum="16" Width="95" VerticalAlignment="Center"
                                 Value="{Binding GroupSpacing, Mode=TwoWay}"/>
                     </StackPanel>
 
-                    <!-- COLUMN 2: Theme ComboBox -->
                     <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
                         <TextBlock Text="Тема: " FontSize="11" VerticalAlignment="Center" Width="40"/>
                         <ComboBox Width="95" Height="24" FontSize="11" Padding="4,0"
@@ -27,15 +24,14 @@
                                   SelectedItem="{Binding ActiveThemeName, Mode=TwoWay}"/>
                     </StackPanel>
 
-                    <!-- COLUMN 2, ROW 1: Single Expand CheckBox -->
+
                     <CheckBox Grid.Column="1" Grid.Row="1" Content="Одиночный режим" FontSize="10" VerticalAlignment="Center"
                               IsChecked="{Binding IsSingleExpandGroup, Mode=TwoWay}"/>
 
-                    <!-- COLUMN 3: Hardware Reset Button -->
                     <Button x:Name="PART_ResetStyleButton" Grid.Column="2" Grid.Row="0" Grid.RowSpan="2"
                             Content="Сбросить&#x0a;стили" FontSize="10" Width="75" Padding="2"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Stretch"
-                            Background="#FFF0F0" BorderBrush="#FFCCCC" BorderThickness="1"/>
+                            Background="#FFF0F0" BorderBrush="#FFCCCC" BorderThickness="1" Command="{Binding $parent[ftb:ToolBar].ResetLayoutCommand}"/>
                 </Grid>
             </DataTemplate>
         </Setter>
