@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:ftb="clr-namespace:FlexToolBar.Avalonia">
+                    xmlns:ftb="clr-namespace:FlexToolBar.Avalonia"
+                    xmlns:ftbCore="using:FlexToolBar.Core">
     
     <ControlTheme x:Key="{x:Type ftb:ToolBarSettingsFlexGroup}" 
                   TargetType="ftb:ToolBarSettingsFlexGroup" 
@@ -21,7 +22,7 @@
                         <TextBlock Text="Тема: " FontSize="11" VerticalAlignment="Center" Width="40"/>
                         <ComboBox Width="95" Height="24" FontSize="11" Padding="4,0"
                                   ItemsSource="{Binding $parent[ftb:ToolBar].AvailableThemes}"
-                                  SelectedItem="{Binding ActiveThemeName, Mode=TwoWay}"/>
+                                  SelectedItem="{Binding Source={x:Static ftbCore:FlexLayoutManager.Instance}, Path=ActiveThemeName, Mode=TwoWay}"/>
                     </StackPanel>
 
 

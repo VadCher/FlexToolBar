@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:FlexToolBar.Avalonia.Demo.ViewModels"
         xmlns:ftb="using:FlexToolBar.Avalonia"
+        xmlns:ftbCore="using:FlexToolBar.Core"
         x:Class="FlexToolBar.Avalonia.Demo.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
@@ -31,7 +32,7 @@
 
         <!-- Dynamic Ribbon ToolBar Context -->
         <ftb:ToolBar x:Name="DemoToolBar"
-                     AutoSaveId="DemoWorkspaceLayout"
+                     ToolBarId="DemoToolBar"
                      RestoreSelectedTab="True"
                      DockPanel.Dock="Top"
                      IsSingleExpandGroup="{Binding IsSingleExpandMode, Mode=TwoWay}">
@@ -43,7 +44,7 @@
 
                         <!-- Group 1: File Operations (Statically Pinned) -->
                         <!-- FIX: Converted GroupId from attached syntax to direct styled property -->
-                        <ftb:FlexGroup Header="File" IsPinned="True" PinVisible="False" GroupId="FileGroup">
+                        <ftb:FlexGroup Header="File"  GroupId="FileGroup">
                             <StackPanel Orientation="Horizontal" Spacing="6" Margin="2">
                                 <Button Content="📄 New" Padding="8,4"/>
                                 <Button Content="📂 Open" Padding="8,4"/>
@@ -81,7 +82,7 @@
                             <!-- ItemsSource links to root AvailableThemes collection via parent loop -->
                             <ComboBox Width="95" Height="24" FontSize="11" Padding="4,0"
                                       ItemsSource="{Binding $parent[ftb:ToolBar].AvailableThemes}"
-                                      SelectedItem="{Binding ActiveThemeName, Mode=TwoWay}"/>
+                                      SelectedItem="{Binding Source={x:Static ftbCore:FlexLayoutManager.Instance}, Path=ActiveThemeName, Mode=TwoWay}"/>
                         </StackPanel>
 
                         <!-- COLUMN 2, ROW 1: Single Expand CheckBox -->
@@ -98,57 +99,43 @@
                     
                 </ftb:FlexGroup>
 
-                        <!-- Group 3: Comprehensive Font Configurations -->
-                        <!-- FIX: Converted GroupId from attached syntax to direct styled property -->
-                        <ftb:FlexGroup Header="Font" ExpandedHeader="Typography" GroupId="FontGroup">
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,2">
-                                <ComboBox SelectedIndex="0" Width="130" Height="26" FontSize="11">
-                                    <ComboBoxItem>Arial</ComboBoxItem>
-                                    <ComboBoxItem>Times New Roman</ComboBoxItem>
-                                    <ComboBoxItem>Courier New</ComboBoxItem>
-                                    <ComboBoxItem>Segoe UI</ComboBoxItem>
-                                </ComboBox>
-
-                                <ComboBox SelectedIndex="1" Width="55" Height="26" FontSize="11">
-                                    <ComboBoxItem>10</ComboBoxItem>
-                                    <ComboBoxItem>12</ComboBoxItem>
-                                    <ComboBoxItem>14</ComboBoxItem>
-                                    <ComboBoxItem>16</ComboBoxItem>
-                                    <ComboBoxItem>18</ComboBoxItem>
-                                </ComboBox>
-
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <ToggleButton Content="B" FontWeight="Bold" Width="26" Height="26" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-                                    <ToggleButton Content="I" FontStyle="Italic" Width="26" Height="26" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-                                    <ToggleButton Width="26" Height="26" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                                        <TextBlock Text="U" TextDecorations="Underline"/>
-                                    </ToggleButton>
-                                </StackPanel>
-                            </StackPanel>
-                        </ftb:FlexGroup>
-
-                        <!-- Group 4: Paragraph Alignment -->
-                        <!-- FIX: Converted GroupId from attached syntax to direct styled property -->
-                        <ftb:FlexGroup Header="Paragraph" GroupId="ParagraphGroup">
-                            <StackPanel Orientation="Horizontal" Spacing="3" Margin="2">
-                                <RadioButton Content="⇐ Left" IsChecked="True" GroupName="Align" CornerRadius="3" Padding="6,4"/>
-                                <RadioButton Content="⇔ Center" GroupName="Align" CornerRadius="3" Padding="6,4"/>
-                                <RadioButton Content="⇒ Right" GroupName="Align" CornerRadius="3" Padding="6,4"/>
-                            </StackPanel>
-                        </ftb:FlexGroup>
-
+ 
                     </ftb:Tab.Items>
                 </ftb:Tab>
-                <!-- TAB 2: VIEW WORKSPACE -->
-                <!-- FIX: Explicitly assigned TabId to the View tab for localized single-expand bounds evaluation -->
+                <ftb:Tab Header="Вид" ftb:Tab.TabId="ViewTab0">
+                    <ftb:Tab.Items>
+                        <ftb:FlexGroup Header="Clipboard" GroupId="ClipboardGroup0" DataContext="ТестоваяСтрокаContext">
+                            <StackPanel Orientation="Horizontal" Spacing="4" Margin="2">
+                                <Button Content="✂ Cut" Padding="6,4"/>
+                                <Button Content="📋 Copy" Padding="6,4"/>
+                                <Button Content="📥 Paste" Padding="6,4"/>
+                            </StackPanel>
+                        </ftb:FlexGroup>
+                        <ftb:ToolBarSettingsFlexGroup Header="Интерфейс" ExpandedHeader="Настройки панели инструментов" GroupId="Settings"/>
+                    </ftb:Tab.Items>
+                </ftb:Tab>
+            </ftb:ToolBar.Tabs>
+        </ftb:ToolBar>
+        <ftb:ToolBar x:Name="SecondToolBar"
+                     ToolBarId="SecondToolBar"
+                     
+                     DockPanel.Dock="Top"
+                     IsSingleExpandGroup="{Binding IsSingleExpandMode, Mode=TwoWay}">
+            <ftb:ToolBar.Tabs>
                 <ftb:Tab Header="Вид" ftb:Tab.TabId="ViewTab">
                     <ftb:Tab.Items>
+                        <ftb:FlexGroup Header="Clipboard" GroupId="ClipboardGroup2" DataContext="ТестоваяСтрокаContext">
+                            <StackPanel Orientation="Horizontal" Spacing="4" Margin="2">
+                                <Button Content="✂ Cut" Padding="6,4"/>
+                                <Button Content="📋 Copy" Padding="6,4"/>
+                                <Button Content="📥 Paste" Padding="6,4"/>
+                            </StackPanel>
+                        </ftb:FlexGroup>
 
-                        <ftb:ToolBarSettingsFlexGroup Header="Интерфейс" ExpandedHeader="Настройки панели инструментов" />
+                        <ftb:ToolBarSettingsFlexGroup Header="Интерфейс" ExpandedHeader="Настройки панели инструментов" GroupId="Settings2"/>
 
                     </ftb:Tab.Items>
                 </ftb:Tab>
-
             </ftb:ToolBar.Tabs>
         </ftb:ToolBar>
 

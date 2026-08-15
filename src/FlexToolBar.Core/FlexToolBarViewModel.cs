@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace FlexToolBar.Core
 {
@@ -7,12 +8,19 @@ namespace FlexToolBar.Core
     {
         public Dictionary<string, FlexGroupViewModel> Groups { get; set; } = new();
 
-        public void RegisterGroup(string groupId, FlexGroupViewModel groupViewModel)
+        public FlexGroupViewModel GetGroup(string groupId)
         {
-            if (string.IsNullOrEmpty(groupId) || groupViewModel == null) return;
-            
-            groupViewModel.SetParent(this);
-            Groups[groupId] = groupViewModel;
+            if (string.IsNullOrEmpty(groupId)) return new FlexGroupViewModel();
+            FlexGroupViewModel? groupModel = default;
+            if (!Groups.TryGetValue(groupId, out groupModel))
+            {
+                groupModel = new FlexGroupViewModel() { IsNew = true };
+                Groups[groupId] = groupModel;
+            }
+
+            groupModel.SetParent(this);
+
+            return groupModel;
         }
 
         public double GroupSpacing
@@ -20,16 +28,6 @@ namespace FlexToolBar.Core
             get => field;
             set => RaiseAndSetIfChanged(ref field, value);
         } = 6.0;
-
-        public string ActiveThemeName
-        {
-            get => field;
-            set
-            {
-                if (string.IsNullOrEmpty(value)) return;
-                RaiseAndSetIfChanged(ref field, value);
-            }
-        } = "Default";
 
         public string SelectedTabId
         {

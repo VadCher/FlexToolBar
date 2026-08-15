@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
@@ -7,8 +8,50 @@ using System.Text.Json.Serialization;
 
 namespace FlexToolBar.Core
 {
-    public class FlexLayoutManager
+    public class LayoutSnapshot : ViewModelBase
     {
+        [JsonInclude]
+        internal Dictionary<string, FlexToolBarViewModel> Models { set; get; } = new();
+
+        public string ActiveThemeName
+        {
+            get;
+            set
+            {
+                if (string.IsNullOrEmpty(value)) return;
+                RaiseAndSetIfChanged(ref field, value);
+            }
+        } = "Default";
+    }
+    public class FlexLayoutManager : LayoutSnapshot
+    {
+        public static FlexLayoutManager Instance { get; } = new FlexLayoutManager();
+        static FlexLayoutManager()
+        {
+            LoadLayout();
+        }
+        private const string LayoutFileName = "toolBarLayout.json";
+
+        public bool IsEdited { get; private set; }
+
+        private FlexLayoutManager()
+        {
+        }
+
+        internal void SetIsEdited()
+        {
+            if (IsEdited) return;
+            IsEdited = true;
+            OnPropertyChanged(nameof(IsEdited));
+        }
+
+        internal void ResetIsEdited()
+        {
+            if (!IsEdited) return;
+            IsEdited = false;
+            OnPropertyChanged(nameof(IsEdited));
+        }
+
         private static readonly JsonSerializerOptions SerializerOptions = new()
         {
             WriteIndented = true,
@@ -18,44 +61,61 @@ namespace FlexToolBar.Core
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        private string GetFilePath(string autoSaveId)
+        private static string GetFilePath()
         {
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{autoSaveId}.json");
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, LayoutFileName);
         }
 
-        public void SaveLayout(FlexToolBarViewModel viewModel, string autoSaveId)
+        // 2. Factory Endpoint: Resolves or registers active workflow view models
+        public static FlexToolBarViewModel GetToolBar(string toolBarId)
         {
-            if (viewModel == null || string.IsNullOrWhiteSpace(autoSaveId)) return;
+            if (string.IsNullOrWhiteSpace(toolBarId))
+                throw new ArgumentException("Identifier cannot be null or whitespace.", nameof(toolBarId));
 
-            viewModel.ResetIsEdited();
+            if (Instance.Models.TryGetValue(toolBarId, out var existingModel))
+            {
+                return existingModel;
+            }
+
+            var newModel = new FlexToolBarViewModel();
+            Instance.Models[toolBarId] = newModel;
+            return newModel;
+        }
+
+        // 1. Monolithic Save: Commits the entire root manager instance structure to a single transaction file
+        public static void SaveLayout()
+        {
+            Instance.ResetIsEdited();
 
             try
             {
-                string json = JsonSerializer.Serialize(viewModel, SerializerOptions);
-                File.WriteAllText(GetFilePath(autoSaveId), json);
+                // Serializes the whole manager singleton object (including global theme and internal models dictionary)
+                string json = JsonSerializer.Serialize(Instance, SerializerOptions);
+                File.WriteAllText(GetFilePath(), json);
             }
             catch { }
         }
 
-        public bool LoadLayout(FlexToolBarViewModel viewModel, string autoSaveId)
+        // 2. Monolithic Load: Restores and deep-copies the entire state tree in a single root reflection pass
+        public static bool LoadLayout()
         {
-            if (viewModel == null || string.IsNullOrWhiteSpace(autoSaveId)) return false;
+            Instance.ResetIsEdited();
 
-            viewModel.ResetIsEdited();
-
-            string filePath = GetFilePath(autoSaveId);
+            string filePath = GetFilePath();
             if (!File.Exists(filePath)) return false;
 
             try
             {
                 string json = File.ReadAllText(filePath);
 
-                var testViewModel = JsonSerializer.Deserialize<FlexToolBarViewModel>(json, SerializerOptions);
-                if (testViewModel == null) return false;
+                // Reconstruct the structural layout blueprint configuration from disk
+                var layoutSnapshot = JsonSerializer.Deserialize<LayoutSnapshot>(json, SerializerOptions);
+                if (layoutSnapshot == null) return false;
+                Instance.ActiveThemeName = layoutSnapshot.ActiveThemeName;
+                Instance.Models = layoutSnapshot.Models;
+                // CopyProperties(loadedManager, Instance, typeof(LayoutSnapshot));
 
-                CopyProperties(testViewModel, viewModel);
-
-                viewModel.ResetIsEdited();
+                Instance.ResetIsEdited();
                 return true;
             }
             catch (JsonException)
@@ -63,88 +123,87 @@ namespace FlexToolBar.Core
                 return false;
             }
         }
-        
-        public void DeleteLayout(string autoSaveId)
+
+        public static event Action? LayoutResetRequested;
+
+        public static void DeleteLayout()
         {
-            if (string.IsNullOrWhiteSpace(autoSaveId)) return;
-            try
-            {
-                string filePath = GetFilePath(autoSaveId);
-                if (File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                }
-            }
-            catch { }
+            string filePath = GetFilePath();
+            if (File.Exists(filePath)) File.Delete(filePath);
+
+            LayoutResetRequested?.Invoke();
         }
 
-        private static void CopyProperties(object src, object target)
-        {
-            if (src == null || target == null) return;
+        // private static void CopyProperties(object src, object target, Type? explicitType = default)
+        // {
+        //     if (src == null || target == null) return;
 
-            Type type = src.GetType();
-            if (type != target.GetType()) throw new ArgumentException("Arguments have different types.");
+        //     Type typeToScan = explicitType ?? src.GetType();
 
-            foreach (PropertyInfo info in type.GetProperties())
-            {
-                if (info.GetCustomAttributes(typeof(JsonIgnoreAttribute), false).Length > 0) continue;
-                if (!info.CanRead) continue;
+        //     if (explicitType == null && src.GetType() != target.GetType())
+        //     {
+        //         throw new ArgumentException("Arguments have different runtime types and no explicit type contract was provided.");
+        //     }
 
-                object? srcValue = info.GetValue(src, null);
-                if (srcValue == null) continue;
+        //     foreach (PropertyInfo info in typeToScan.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+        //     {
+        //         if (info.GetCustomAttributes(typeof(JsonIgnoreAttribute), false).Length > 0) continue;
+        //         if (!info.CanRead) continue;
 
-                if (srcValue is IEnumerable srcEnum && info.PropertyType != typeof(string))
-                {
-                    var targetEnum = info.GetValue(target, null) as IEnumerable;
-                    if (targetEnum != null)
-                    {
-                        IEnumerator srcIterator = srcEnum.GetEnumerator();
-                        IEnumerator targetIterator = targetEnum.GetEnumerator();
+        //         object? srcValue = info.GetValue(src, null);
+        //         if (srcValue == null) continue;
 
-                        while (srcIterator.MoveNext() && targetIterator.MoveNext())
-                        {
-                            object srcCurrent = srcIterator.Current;
-                            object targetCurrent = targetIterator.Current;
+        //         if (srcValue is IEnumerable srcEnum && info.PropertyType != typeof(string))
+        //         {
+        //             var targetEnum = info.GetValue(target, null) as IEnumerable;
+        //             if (targetEnum != null)
+        //             {
+        //                 IEnumerator srcIterator = srcEnum.GetEnumerator();
+        //                 IEnumerator targetIterator = targetEnum.GetEnumerator();
 
-                            if (srcCurrent == null || targetCurrent == null) continue;
+        //                 while (srcIterator.MoveNext() && targetIterator.MoveNext())
+        //                 {
+        //                     object srcCurrent = srcIterator.Current;
+        //                     object targetCurrent = targetIterator.Current;
 
-                            Type currentType = srcCurrent.GetType();
-                            if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-                            {
-                                object? key = currentType.GetProperty("Key")?.GetValue(srcIterator.Current, null);
-                                object? srcChild = currentType.GetProperty("Value")?.GetValue(srcIterator.Current, null);
+        //                     if (srcCurrent == null || targetCurrent == null) continue;
 
-                                object? targetChild = currentType.GetProperty("Value")?.GetValue(targetIterator.Current, null);
+        //                     Type currentType = srcCurrent.GetType();
+        //                     if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+        //                     {
+        //                         object? key = currentType.GetProperty("Key")?.GetValue(srcIterator.Current, null);
+        //                         object? srcChild = currentType.GetProperty("Value")?.GetValue(srcIterator.Current, null);
+        //                         object? targetChild = currentType.GetProperty("Value")?.GetValue(targetIterator.Current, null);
 
-                                if (srcChild != null && targetChild != null)
-                                {
-                                    CopyProperties(srcChild, targetChild);
-                                }
-                            }
-                            else
-                            {
-                                CopyProperties(srcCurrent, targetCurrent);
-                            }
-                        }
-                    }
-                    continue;
-                }
+        //                         if (srcChild != null && targetChild != null)
+        //                         {
+        //                             CopyProperties(srcChild, targetChild, default);
+        //                         }
+        //                     }
+        //                     else
+        //                     {
+        //                         CopyProperties(srcCurrent, targetCurrent, default);
+        //                     }
+        //                 }
+        //             }
+        //             continue;
+        //         }
 
-                if (info.CanWrite)
-                {
-                    if (!info.PropertyType.IsPrimitive && info.PropertyType != typeof(string) && !info.PropertyType.IsValueType)
-                    {
-                        object? targetValue = info.GetValue(target, null);
-                        if (targetValue != null)
-                        {
-                            CopyProperties(srcValue, targetValue);
-                            continue;
-                        }
-                    }
+        //         if (info.CanWrite)
+        //         {
+        //             if (!info.PropertyType.IsPrimitive && info.PropertyType != typeof(string) && !info.PropertyType.IsValueType)
+        //             {
+        //                 object? targetValue = info.GetValue(target, null);
+        //                 if (targetValue != null)
+        //                 {
+        //                     CopyProperties(srcValue, targetValue, default);
+        //                     continue;
+        //                 }
+        //             }
 
-                    info.SetValue(target, srcValue, null);
-                }
-            }
-        }
+        //             info.SetValue(target, srcValue, null);
+        //         }
+        //     }
+        // }
     }
 }

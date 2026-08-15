@@ -6,23 +6,24 @@ FlexToolBar is a high-performance, lightweight hybrid layout controller designed
 
 ### Core Architecture Pipeline
 - **Separation of Concerns**: 
-  - `FlexToolBar.Core`: Pure cross-platform data structures and state carriers. Zero framework visual dependencies. Highly optimized for in-place `System.Text.Json` `.Populate` mapping.
+  - `FlexToolBar.Core`: Pure cross-platform data structures and state carriers. Zero framework visual dependencies. Fully decoupled from specific UI assemblies.
   - `FlexToolBar.Avalonia`: Implementation layer containing custom controls, interactive templates, and stylesheets.
 - **Unified State Modeling (O(1) Architecture)**: Tab collection structures are managed statically at the XAML composition layer. The core tracking layer ignores nested visual tree iterations, isolating all running group states inside a globally accessible flat identity registry mapping layout parameters atomically via a unique `GroupId` dictionary key.
 
 ## 2. Component Specifications & Defaults (XAML/UI)
 
 ### ToolBar (Root Control)
-- **The Structural Placement Mandate (DockPanel Law):** To guarantee pixel-perfect responsive alignment across touch targets, the `ToolBar` control must always be hosted directly inside a native `DockPanel` container at the view layer.
+- **The Structural Placement Mandate (DockPanel Law):** To guarantee pixel-perfect responsive alignment across touch targets, the `ToolBar` control must always be hosted directly inside a native `DockPanel` container at the view layer. Supports complete multi-window, multi-bar круговые CAD-конфигурации.
   ```xml
   <DockPanel>
-      <local:ToolBar DockPanel.Dock="{Binding PanelEdge}" />
+      <local:ToolBar ToolBarId="CadTopToolbar" PanelEdge="Top" />
+      <local:ToolBar ToolBarId="CadLeftToolbar" PanelEdge="Left" />
   </DockPanel>
   ```
-- `FlexToolBarViewModel ViewModel` (Internal Registry Core): The single source of truth driving the component configuration.
+- `FlexToolBarViewModel ViewModel` (Internal Registry Core): The single source of truth driving the component instance configuration. Loaded lazily via unique `ToolBarId`.
 - `double ToolBar.GroupSpacing` (Attached Property, Default: `6.0`): Visually drives layout padding gaps. Registered with visual tree inheritance enabled (`inherits: true`).
-- `global::Avalonia.Controls.Dock ToolBar.PanelEdge` (Styled Property, Default: `Dock.Top`): Toggles screen edge attachment context.
-- `ICommand ResetLayoutCommand` (UI Internal Command): Executes direct hardware asset resets utilizing the framework's internal `ClearValue` mechanisms. Property values seamlessly cascade back into the core model registry via active TwoWay data bindings.
+- `global::Avalonia.Controls.Dock ToolBar.PanelEdge` (Styled Property, Default: `Dock.Top`): Toggles screen edge attachment context (Top, Bottom, Left, Right).
+- `ICommand ResetLayoutCommand` (UI Internal Command): Bound directly to the core manager instance: `new MiniRelayCommand(() => FlexLayoutManager.DeleteLayout());`. Completely bypasses local view-state routines, driving an atomic global configuration wipe.
 - **The Seamless Tab Persistence Mandate (SelectedValue Law):** To guarantee that the active workspace context never shifts or drops to index zero during destructive runtime theme stylesheet hot-swapping transactions, the template-driven `TabStrip` MUST bind its active state declaratively using the native string identity pipeline:
   ```xml
   <TabStrip x:Name="PART_TabSelectionStrip"
@@ -49,17 +50,16 @@ FlexToolBar is a high-performance, lightweight hybrid layout controller designed
 - **Headers Fallback Logic**:
   - `Header`: Display text for the collapsed button.
   - `ExpandedHeader`: Display text for the bottom of the expanded panel. If null, automatically falls back to `Header`. If explicit empty string (`""`), the text block collapses (`IsVisible="False"`), saving vertical space.
-
 ## 3. Layout Lifecycle & Serialization Pipeline
 
 1. **Phase Separation Engine**: During the control's boot phase (XAML parsing), visual UI components (`FlexGroup`) initialize their internal concrete `FlexGroupViewModel` instances locally, caching compile-time XAML literal values and stylesheet default metrics natively.
 2. **Top-Down Registry Assembly**: The true orchestration handshake executes strictly inside the root `OnLoaded` method of the `ToolBar` control before the configuration file is read. The master `ToolBar` iterates through its static `Tabs` collection, discovers all child `FlexGroup` containers, injects the corresponding `TabId` markers, links the parent view model references, and registers their live `GroupViewModel` references directly into the global flat dictionary registry via unique `GroupId` keys.
-3. **Symmetric Reflection Transmission**: The configuration JSON file is processed inside the `LoadLayout` method via standard `JsonSerializer.Deserialize` into a clean, short-lived isolated memory layout snapshot. Property mutations and state configurations stream back into the active, pre-assembled live object tree matrix utilizing an optimized, single-loop recursive properties reflection carrier (`CopyProperties`).
+3. **Monolithic Reflection Serialization**: The configuration JSON file represents the entire serialized snapshot of the root manager object (`FlexLayoutManager`), storing both global application-wide primitives (theme name) and individual tab layout catalogs. The loading pipeline executing inside `LoadLayout` reconstructs a temporary configuration blueprint and initiates a **single root-level pass** of the recursive properties reflection engine (`CopyProperties`), safely mutating active live trees in memory without severing UI pointer bindings.
 4. **The Enumerable KeyValuePair Alignment Rule**: To strictly protect and maintain live framework UI pointer references in memory, the reflection engine ignores generic collection overrides. It processes structural boundaries through a unified parallel `IEnumerable` iterator. If an encountered node implements the explicit generic layout contract signature of `KeyValuePair<TKey, TValue>`, the engine automatically extracts the internal `Value` property contexts and drops down recursively to perform an in-place mutation of primitive state flags, securing a Zero Garbage Collection runtime footprint.
-5. **Proactive Invalidation Safeguard**: To shield the platform against infinite auto-save disk loop cycles caused by rapid deserialization field mutations or unexpected file-system blocks, an explicit invocation of `ViewModel.ResetIsEdited()` is strictly forced at the absolute entry boundary of the loading transaction, immediately followed by a secondary flush call upon successful data transmission.
+5. **Proactive Invalidation Safeguard**: To shield the platform against infinite auto-save disk loop cycles caused by rapid deserialization field mutations or unexpected file-system blocks, an explicit invocation of `Instance.ResetIsEdited()` is strictly forced at the absolute entry boundary of the loading transaction, immediately followed by a secondary flush call upon successful data transmission.
 6. **First-Boot Forced Baseline**: If the physical JSON configuration file does not exist on disk (cold startup phase), the serialization engine instantly forces an explicit layout snapshot execution to disk as an absolute blueprint, followed by an immediate execution of `ResetIsEdited()`.
-7. **Crash Resilience (Debounced Auto-Save)**: Built-in background serialization driven by a native `DispatcherTimer` running at `DispatcherPriority.Background`.
-   - Activates reactively only when the core view model fires an explicit property notification for the global `IsEdited` state flag.
+7. **Crash Resilience (Debounced Auto-Save)**: Built-in background serialization driven by a native `DispatcherTimer` running at `DispatcherPriority.Background` inside the UI layer.
+   - Activates reactively only when the central `FlexLayoutManager.Instance` fires an explicit property notification for the global `IsEdited` state flag.
    - Uses a strict **Debounce pattern** via `Stop()/Start()` sequence to group rapid user interaction cycles and minimize SSD write wear.
    - Flushes state primitives to disk after a cooling interval defined by `AutoSaveInterval` (Default: 5 seconds). Setting this property to `TimeSpan.Zero` completely disables the background timer.
 
@@ -69,9 +69,16 @@ FlexToolBar is a high-performance, lightweight hybrid layout controller designed
 Provides property notification triggers optimized for modern C# development semantics.
 - `bool IsEdited` (Read-only): Automatically flipped to `true` whenever any underlying state mutation executes via the core `RaiseAndSetIfChanged` assignment engine. Fires explicit `OnPropertyChanged` notifications upon both activation and successful persistence resets to drive external responsive UI indicators (saving status icons, explicit save buttons availability) natively.
 
+### FlexLayoutManager (Central Singleton Core)
+The absolute master single source of truth managing application-wide metrics and multi-bar layouts.
+- **Hardware-Enforced Singleton Initializer**: Built entirely upon native .NET Type Initializer specifications to eliminate overhead from system tokens and wrapper memory leaks: `public static FlexLayoutManager Instance { get; } = new();`.
+- `string ActiveThemeName` (Default: `"Default"`): App-wide global theme controller. Completely isolated from individual bar models. Operates as the root TwoWay target directly synchronized with active `ToolBar` controls.
+- `private Dictionary<string, FlexToolBarViewModel> Models { get; set; }`: Flat high-performance state catalog pairing unique `ToolBarId` identifiers with individual runtime toolbars data contexts. Managed securely via explicit `[JsonInclude]` metadata attributes.
+- **Atomic Dispatcher-Safe Destruction**: Exposes a public `DeleteLayout()` transaction routine which physically cleanses disk blueprints and sequence-fires a pure, platform-independent cross-assembly notification bridge: `public static event Action? LayoutResetRequested;`.
+
 ### FlexToolBarViewModel
-The master cross-platform flat container coordinating live library metric snapshots. Completely stripped of abstract UI-interface wrappers and heavy nested tab-collection tracking events.
-- `Dictionary<string, FlexGroupViewModel> Groups`: Flat high-performance state catalog pairing unique `GroupId` keys with live group instances for `O(1)` accessibility.
+The cross-platform flat container coordinating live library metric snapshots for an individual bar ID. Completely stripped of abstract UI-interface wrappers and heavy nested tab-collection tracking events.
+- `Dictionary<string, FlexGroupViewModel> Groups`: Flat state catalog pairing unique `GroupId` keys with live group instances for `O(1)` accessibility.
 - `bool IsSingleExpandGroup` (Default: `false`): Property setter intercepts activation mutations to instantly execute a localized, flat boundary collapsing sequence across the group registry.
 
 ### FlexGroupViewModel
@@ -79,7 +86,6 @@ Tracked container carrying state variables for a single user group instance.
 - `string TabId`: Localized runtime string boundary marker allowing isolated single-expand mutations. Excluded from disk serialization routines via explicit `[JsonIgnore]` constraints.
 - `bool IsExpanded` (Default: `true`): Setter logic intercepts execution steps to perform localized group collapses restricted within matching `TabId` scopes without subscribing to verbose external property changed listeners.
 - `bool IsPinned` (Default: `false`): Prevents automatic or layout-driven structural collapsing routines.
-
 ## 5. Styling, Themes & Extensible Assets
 
 Every control in `FlexToolBar` is a `TemplatedControl` configured via modern `ControlTheme` dictionaries, meaning its look and feel is completely decoupled from logic. The base themes contain only structural grid skeletal definitions and logical bindings, ensuring `DataContext` remains untouched for application developers [1.1].
@@ -114,7 +120,6 @@ Every control in `FlexToolBar` is a `TemplatedControl` configured via modern `Co
 ### Navigation Assets Injection API
 - **ScrollLeftContent & ScrollRightContent** (Type: `object`, Default: `"◀"` / `"▶"`): Declared at the root `ToolBar` dependency property registry [1.1]. Allows styling engines to seamlessly inject vector geometry (`Path`), custom SVG graphics, or stylized Unicode glyphs without touching the base source templates [1.1].
 - **Elastic Default Button Bounds**: Core navigation buttons inside `ToolBar.Styles.axaml` completely erase explicit width boundaries (`Width="Auto"`). They utilize a default style container specifying `Padding="4,0,4,0"`, which forces the button framework border to dynamically stretch or shrink to safely hug the shape of any injected glyph context natively [1.1].
-
 ## 6. Resource Dictionary & Hybrid Theme Swapping Architecture
 
 To eliminate layout compilation conflicts and maximize rendering performance while keeping active tab navigation rock-solid, the architecture implements a **Hybrid Swapping Pipeline** combining static resource dictionaries with reactive styles cascading engines [1.1].
@@ -122,8 +127,8 @@ To eliminate layout compilation conflicts and maximize rendering performance whi
 ### 1. The Pure Monolithic Dictionary Mandate
 The core library entry file `FlexToolBar.axaml` MUST be implemented strictly as a naked `ResourceDictionary` [1.1]. It operates as a consolidated cross-assembly resource gateway using clean `ResourceInclude` nodes to publish default themes into the global application scope:
 ```xml
-<ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="https://github.com"
+                    xmlns:x="http://microsoft.com">
 
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://FlexToolBar.Avalonia/FlexGroup.Styles.axaml" />
@@ -169,8 +174,30 @@ Dynamic modifier packages (e.g. `Compact.ToolBar.Theme.axaml`) MUST be implement
 </Styles>
 ```
 
-### 6. The Atomic Style Swapping Transaction Contract
-Runtime theme switching executes within the `ToolBar.cs` orchestration layer by manipulating the local reactive `this.Styles` collection. The process follows a strict transaction sequence:
-- **Wipe Phase**: Executing `this.Styles.Clear()` instantly washes away the custom style sheet layer, forcing the Avalonia engine to fall back onto the global unified application resources template baseline with zero layout creation overhead [1.1].
-- **Default Check**: If the target state is `"Default"`, the thread immediately returns, concluding the transaction with optimal processor cycles efficiency [1.1].
-- **Inject Phase**: The requested theme name extracts its target `Uri` from the static memory registry at `O(1)` performance [1.1]. The path encapsulates inside a native `StyleInclude` token and injects into the active local styles collection, forcing an instantaneous, ripple-free visual tree layout recalculation while the active tab remains safely frozen in place [1.1].
+### 6. The Hardened Active-Theme Cascade Contract
+The global application theme `ActiveThemeName` is hosted directly at the `FlexLayoutManager.Instance` root layer [1.1]. 
+- **The Direct Binding Rule (Variant C):** To completely bypass view-model routing and prevent visual memory leaks, individual `ToolBar` instances bind their local `ActiveThemeNameProperty` directly to the singleton manager using native `TwoWay` bindings [1.1].
+- **Atomic Theme Execution:** Changes instantly filter through a static `AddClassHandler`, invoking the optimized `ApplyThemeDirect` routing routine [1.1]. The local `this.Styles` collection is transactionally wiped via `.Clear()`, falling back instantly onto the raw application baseline before appending a newly instantiated `StyleInclude` token mapped at `O(1)` from the theme registry URI [1.1].
+
+### 7. The Hybrid Queue-Driven Invalidation Rule (Reset Engine)
+To support infinite круговые multi-bar CAD макеты layout topologies without memory corruption, recursive execution traps, or lock фризы, resets follow a strict **Hybrid Event/Queue Handshake Pipeline** [1.1]:
+1. **The Entry Intercept:** Triggering `ResetLayoutCommand` on ANY visible bar routes execution strictly in-place to the root core, firing `FlexLayoutManager.DeleteLayout()` to destroy configuration footprints on disk [1.1].
+2. **The Platform-Independent Broadcast:** The core manager fires a standard .NET `LayoutResetRequested` multicast delegate sequential wave [1.1].
+3. **The View-Thread Marshalling:** Individual live `ToolBar` instances intercept the broadcast signal inside a dedicated `OnLayoutResetRequested` event handler [1.1]. Instead of forcing instant inline mutations, they push tasks directly into the framework operation stream via `Dispatcher.UIThread.Post(ResetToDefaultLayout, DispatcherPriority.Background);`, closing the click packet transaction without micro-lags [1.1].
+4. **The Adaptive Native Fallback:** When a task unqueues, the view executes `this.ClearValue()` against its key dependency properties [1.1]. The framework instantly reverts metrics back to compile-time XAML defaults specified by the layout developer [1.1]. The alive `TwoWay` data bindings automatically capture these default metrics and stream values back to synchronize the active registry state without cyclic collisions [1.1].
+### 8. The State-Machine Handshake Protocol & JIT Model Allocation
+To guarantee absolute memory isolation, prevent runtime lifecycle race conditions, and preserve compile-time XAML defaults during the initialization phase, the framework completely abandons procedural reflection mutations in favor of an explicit Just-In-Time (JIT) model factory pattern [1.1].
+
+- **The Sterile Core Boundary Constraint:** The `Core` layer contains pure view-models that implement standard `INotifyPropertyChanged` contracts (`ViewModelBase`), remaining completely agnostic of any Avalonia UI framework binary dependencies [1.1].
+- **The State Factory Lifecycle Loop (`GetGroup` Routing):** The layout engine centralizes state allocation within the toolbar view-model layer. The state-machine tracks memory allocation states using an explicit structural factory marker flag (`IsNew` Paradigm) embedded directly within the group model blueprint [1.1].
+- **The Hot-Start Vector (JSON Footprint Exists):** If the requested group identifier is found within the deserialized internal master dictionary, the factory yields the cached model snapshot retrieved from disk [1.1]. The allocation marker remains suppressed (`IsNew = false`), locking the loaded data configuration [1.1].
+- **The Cold-Start Vector (First Launch / Missing Key):** If the key is absent, the factory instantiates a fresh model instance with the structural marker explicitly set to true (`IsNew = true`) and registers it within the master collection, forcing the UI to dictate the initial baseline [1.1].
+
+### 9. Asynchronous Lifecycle Dispatching (`ToolBar.OnLoaded` Workflow)
+Avalonia UI elements construct layout topologies from the bottom up, meaning child group instances lack a valid visual tree parent or master data context scope during early XAML parsing phases [1.1]. To eliminate initialization gaps and race conditions caused by premature property mutation triggers, all handshake workflows route strictly through the centralized layout dispatching pipeline during the window loading phase [1.1].
+
+- **The Coordinator Responsibility Engine:** The host toolbar control functions as the sole structural coordinator [1.1]. It sequences through layout tabs, extracts the contextual layout boundaries, maps the internal structural tab identifiers inside the model, and passes live references downward to child controllers [1.1].
+- **The Conflict-Free Data Mutation Shield:** The child control receives the model reference and instantly evaluates the state factory marker to resolve UI property conflicts:
+  1. **XAML Baseline Ingestion:** If the allocation marker is active (`IsNew = true`), the group model safely ingests initial layout definitions (e.g., expanded and pinned states) straight from the XAML literal values declared by the application developer [1.1].
+  2. **JSON Overrides Enforcement:** If the marker is suppressed (`IsNew = false`), the XAML default initialization pass is completely bypassed, enforcing absolute priority of the values retrieved from the disk layout configuration [1.1].
+- **The Isolated TwoWay Data-Stream Bridge:** To ensure that application developers retain full, unpolluted control over the public `DataContext` property inside the layout boundaries for business logic bindings, all core toolbar synchronization parameters bind explicitly using targeted layout engine channels [1.1]. The runtime loop links dependency properties directly into the isolated internal model endpoint using strict two-way synchronization modes, keeping the host element context unpolluted [1.1].

@@ -16,22 +16,6 @@ public abstract class ViewModelBase : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
-    /// Gets whether any reactive property value has been modified since the last state flush.
-    /// </summary>
-    [JsonIgnore]
-    public bool IsEdited { get; private set; }
-
-    /// <summary>
-    /// Resets the modified state flag back to false after a successful persistence operation.
-    /// </summary>
-    public void ResetIsEdited()
-    {
-        if (!IsEdited) return;
-        IsEdited = false;
-        OnPropertyChanged(nameof(IsEdited));
-    }
-
-    /// <summary>
     /// Raises the PropertyChanged event for the specified property name.
     /// </summary>
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -48,11 +32,9 @@ public abstract class ViewModelBase : INotifyPropertyChanged
         if (EqualityComparer<T>.Default.Equals(backingField, newValue)) return false;
 
         backingField = newValue;
-        IsEdited = true;
 
         OnPropertyChanged(propertyName);
-        OnPropertyChanged(nameof(IsEdited));
-
+        FlexLayoutManager.Instance.SetIsEdited();
         return true;
     }
     protected virtual bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

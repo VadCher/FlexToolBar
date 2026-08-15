@@ -9,6 +9,8 @@ namespace FlexToolBar.Core
     /// </summary>
     public class FlexGroupViewModel : ViewModelBase
     {
+        [JsonIgnore]
+        public bool IsNew { get; init;} = false;
         private FlexToolBarViewModel? _parent;
         public FlexGroupViewModel() { }
         /// <summary>
