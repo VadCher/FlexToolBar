@@ -15,5 +15,14 @@
     <Style Selector="ftb|FlexButton">
         <Setter Property="Padding" Value="2"/>
     </Style>
+    <Style Selector="TabStrip#PART_TabSelectionStrip">
+        <Setter Property="Background" Value="Gray"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="TabStrip#PART_TabSelectionStrip TabStripItem">
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Background" Value="Blue"/>
+    </Style>
 
 </Styles>

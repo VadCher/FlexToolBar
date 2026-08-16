@@ -236,16 +236,8 @@ namespace FlexToolBar.Avalonia
             }, global::Avalonia.Threading.DispatcherPriority.Background);
         }
 
-        private void ApplyThemeDirect(string selectedTheme)
+        private void SetTheme(string selectedTheme)
         {
-            if (string.IsNullOrEmpty(selectedTheme) || selectedTheme == _currentlyLoadedThemeName) return;
-
-            _currentlyLoadedThemeName = selectedTheme;
-
-            this.Styles.Clear();
-
-            if (selectedTheme == "Default") return;
-
             if (ToolBarThemeManager.TryGetThemeUri(selectedTheme, out var targetUri) && targetUri != null)
             {
                 try
@@ -255,6 +247,20 @@ namespace FlexToolBar.Avalonia
                 }
                 catch (Exception) { }
             }
+        }
+
+        private void ApplyThemeDirect(string selectedTheme)
+        {
+            if (string.IsNullOrEmpty(selectedTheme) || selectedTheme == _currentlyLoadedThemeName && Styles.Count>0) return;
+
+            _currentlyLoadedThemeName = selectedTheme;
+
+            this.Styles.Clear();
+
+            SetTheme("Default");
+            if (selectedTheme == "Default") return;
+
+            SetTheme(selectedTheme);
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)

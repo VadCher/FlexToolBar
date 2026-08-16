@@ -8,11 +8,12 @@ namespace FlexToolBar.Avalonia
     {
         private static readonly Dictionary<string, Uri> _themeRegistry = new(StringComparer.OrdinalIgnoreCase);
         
-        public static ObservableCollection<string> AvailableThemes { get; } = new() { "Default" };
+        public static ObservableCollection<string> AvailableThemes { get; } = new() { };
 
         static ToolBarThemeManager()
         {
             // Core library out-of-the-box pre-installed definitions
+            RegisterThemeInternal("Default", new Uri("avares://FlexToolBar.Avalonia/Themes/Default.ToolBar.Theme.axaml"));
             RegisterThemeInternal("Compact", new Uri("avares://FlexToolBar.Avalonia/Themes/Compact.ToolBar.Theme.axaml"));
             RegisterThemeInternal("Green", new Uri("avares://FlexToolBar.Avalonia/Themes/Green.ToolBar.Theme.axaml"));
         }

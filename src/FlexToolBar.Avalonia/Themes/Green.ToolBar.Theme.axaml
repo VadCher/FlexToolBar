@@ -3,8 +3,15 @@
         xmlns:ftb="clr-namespace:FlexToolBar.Avalonia">
 
         <!-- GREEN COLOR PALETTE INJECTION -->
+    <Style Selector="ftb|ToolBar">
+        <Setter Property="Background" Value="#FFFEC6AE"/>
+    </Style>
     <Style Selector=":is(ftb|FlexGroup)">
         <Setter Property="Background" Value="#E2F0D9"/>
         <Setter Property="BorderBrush" Value="#EDFF2B"/>
     </Style>
+    <Style Selector="TabStrip#PART_TabSelectionStrip TabStripItem">
+        <Setter Property="Height" Value="40"/>
+    </Style>
 </Styles>
+ 

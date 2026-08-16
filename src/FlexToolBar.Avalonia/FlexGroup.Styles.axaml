@@ -8,6 +8,8 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="4"/>
         <Setter Property="Padding" Value="4"/>
+        <Setter Property="Margin" Value="0"
+                />
 
         <Setter Property="SeparatorTemplate">
             <ControlTemplate>
@@ -25,7 +27,8 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}"
-                            Padding="{TemplateBinding Padding}">
+                            Padding="{TemplateBinding Padding}"
+                            Margin="{TemplateBinding Margin}">
                         <Grid RowDefinitions="*,Auto">
                             <ContentPresenter Grid.Row="0" Content="{TemplateBinding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             <TextBlock Grid.Row="1" Text="{TemplateBinding Header}" HorizontalAlignment="Center"
@@ -38,7 +41,8 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}"
-                            Padding="{TemplateBinding Padding}">
+                            Padding="{TemplateBinding Padding}"
+                            Margin="{TemplateBinding Margin}">
                         <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto">
                             <Button x:Name="PART_PinButton" Grid.Row="0" Grid.Column="0" Content="🖈" MinHeight="0" MinWidth="0" Padding="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Top" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
                             <Button x:Name="PART_CloseButton" Grid.Row="1" Grid.Column="0" Content="✕" Padding="0" MinHeight="0" MinWidth="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>

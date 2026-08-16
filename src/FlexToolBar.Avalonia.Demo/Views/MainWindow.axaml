@@ -16,7 +16,7 @@
 
     <DockPanel>
         <!-- Bottom control panel for system actions and tablet mode simulation -->
-        <Border DockPanel.Dock="Bottom" Background="#F3F3F3" Padding="10" BorderThickness="0,1,0,0" BorderBrush="LightGray">
+        <Border DockPanel.Dock="Bottom" Background="#F3F3F3" BorderThickness="0,1,0,0" BorderBrush="LightGray">
             <StackPanel Orientation="Horizontal" Spacing="25" HorizontalAlignment="Center">
 
                 <!-- Tablet Mode Switcher (Toggles single expand accordion layout) -->
@@ -116,9 +116,9 @@
                 </ftb:Tab>
             </ftb:ToolBar.Tabs>
         </ftb:ToolBar>
-        <ftb:ToolBar x:Name="SecondToolBar"
+        <ftb:ToolBar x:Name="SecondToolBar"  Margin="0,20,0,0"
                      ToolBarId="SecondToolBar"
-                     
+                     RestoreSelectedTab="True"
                      DockPanel.Dock="Top"
                      IsSingleExpandGroup="{Binding IsSingleExpandMode, Mode=TwoWay}">
             <ftb:ToolBar.Tabs>

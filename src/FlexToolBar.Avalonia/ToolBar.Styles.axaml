@@ -1,17 +1,18 @@
-  <ResourceDictionary xmlns="https://github.com/avaloniaui"
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ftb="clr-namespace:FlexToolBar.Avalonia">
 
     <!-- Современная тема элемента управления ToolBar для Avalonia 11/12 -->
     <ControlTheme x:Key="{x:Type ftb:ToolBar}" TargetType="ftb:ToolBar">
-        
+
         <!-- Сеттеры базовых свойств по умолчанию -->
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
         <Setter Property="CornerRadius" Value="0"/>
-        
+
         <!-- Главный шаблон управления -->
         <Setter Property="Template">
             <ControlTemplate>
@@ -22,40 +23,37 @@
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
                         Padding="{TemplateBinding Padding}"
-                        VerticalAlignment="Stretch" 
+                        Margin="{TemplateBinding Padding}"
+                        VerticalAlignment="Stretch"
                         HorizontalAlignment="Stretch">
-                    
+
                     <!-- TWO-ROW OUTER GRID: Separates headers and active workspaces completely -->
                     <Grid RowDefinitions="Auto,*">
-                        
+
                         <!-- ROW 0: TAB STRIP HEADERS BORDER FRAME -->
-                        <Border x:Name="PART_HeaderContainer"
-                                Grid.Row="0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Center">
-                            
-                            <TabStrip x:Name="PART_TabSelectionStrip"
-                                      ItemsSource="{TemplateBinding Tabs}"
-                                      SelectedValueBinding="{Binding (ftb:Tab.TabId)}"
-                                      SelectedValue="{Binding ViewModel.SelectedTabId, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
-                                      IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}"
-                                      Padding="0"
-                                      Margin="0"
-                                      Background="Transparent">
-                                <TabStrip.ItemTemplate>
-                                    <DataTemplate x:DataType="ftb:Tab">
-                                        <TextBlock Text="{Binding Header}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </DataTemplate>
-                                </TabStrip.ItemTemplate>
-                            </TabStrip>
-                        </Border>
-                        
+                        <TabStrip x:Name="PART_TabSelectionStrip" Grid.Row="0"
+                                  ItemsSource="{TemplateBinding Tabs}"
+                                  SelectedValueBinding="{Binding (ftb:Tab.TabId)}"
+                                  SelectedValue="{Binding ViewModel.SelectedTabId, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                  IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}">
+                            <!-- <TabStrip.Styles>
+                                <Style Selector="TabStripItem">
+                                    <Setter Property="MinHeight" Value="20"/>
+                                </Style>
+                            </TabStrip.Styles> -->
+                            <TabStrip.ItemTemplate>
+                                <DataTemplate x:DataType="ftb:Tab">
+                                    <TextBlock Text="{Binding Header}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </TabStrip.ItemTemplate>
+                        </TabStrip>
+
                         <!-- ROW 1: ACTIVE RIBBON CONTENT BORDER FRAME -->
                         <Border x:Name="PART_ContentContainer"
                                 Grid.Row="1"
                                 VerticalAlignment="Stretch"
                                 HorizontalAlignment="Stretch">
-                            
+
                             <!-- Pure single-row, 7-column layout engine -->
                             <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                                 <Grid.ColumnDefinitions>
@@ -68,7 +66,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <!-- [Col 0]: Fixed Left app margin linked to inherited spacing property -->
-                                <Border Grid.Column="0" 
+                                <Border Grid.Column="0"
                                         Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"/>
 
                                 <!-- [Col 1]: Left Scroll Action Button -->
@@ -81,8 +79,8 @@
                                         IsVisible="False"/>
 
                                 <!-- [Col 2]: Inner Left Gap - collapses to 0 when arrow is hidden -->
-                                <Border Grid.Column="2" 
-                                        Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
+                                <Border Grid.Column="2"
+                                        Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"
                                         IsVisible="{Binding #PART_ScrollLeftButton.IsVisible}"/>
 
                                 <!-- [Col 3]: Global Scroll Viewport carrying active presenters -->
@@ -95,10 +93,10 @@
                                                       Content="{Binding SelectedItem, ElementName=PART_TabSelectionStrip}"
                                                       VerticalAlignment="Stretch"/>
                                 </ScrollViewer>
-                                
+
                                 <!-- [Col 4]: Inner Right Gap - collapses to 0 when arrow is hidden -->
-                                <Border Grid.Column="4" 
-                                        Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}" 
+                                <Border Grid.Column="4"
+                                        Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource TemplatedParent}}"
                                         IsVisible="{Binding #PART_ScrollRightButton.IsVisible}"/>
 
                                 <!-- [Col 5]: Right Scroll Action Button -->
@@ -115,25 +113,19 @@
                 </Border>
             </ControlTemplate>
         </Setter>
-        <!-- ================================================================= -->
-        <!-- ВЛОЖЕННЫЕ СТИЛИ КОМПОНЕНТОВ (ВНУТРИ SCOPE ТЕМЫ TOOLBAR)           -->
-        <!-- ================================================================= -->
 
-        <!-- Настройка отступов контейнера вкладок -->
-        <Style Selector="^ /template/ Border#PART_HeaderContainer">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="4,2,4,0"/>
-        </Style>
+        <!-- <Style Selector="^ /template/ Border#PART_HeaderContainer">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="4,2,4,0"/>
+        </Style> -->
 
-        <!-- Настройка внешнего вида основного шасси риббона -->
         <Style Selector="^ /template/ Border#PART_ContentContainer">
-            <Setter Property="Background" Value="#F3F3F3"/>
-            <Setter Property="BorderBrush" Value="#DCDCDC"/>
-            <Setter Property="BorderThickness" Value="0,1,0,1"/>
+            <!-- <Setter Property="Background" Value=""/> -->
+            <!-- <Setter Property="BorderBrush" Value="#DCDCDC"/> -->
+            <!-- <Setter Property="BorderThickness" Value="0,1,0,1"/> -->
             <Setter Property="Padding" Value="0,4,0,4"/>
         </Style>
 
-        <!-- Единый стиль для левой и правой кнопок прокрутки -->
         <Style Selector="^ /template/ Button#PART_ScrollLeftButton, ^ /template/ Button#PART_ScrollRightButton">
             <Setter Property="Padding" Value="4,0,4,0"/>
             <Setter Property="Background" Value="#F9F9F9"/>
@@ -143,35 +135,6 @@
             <Setter Property="Foreground" Value="#333333"/>
         </Style>
 
-    </ControlTheme> <!-- Конец темы ftb:ToolBar -->
-
-    <!-- ================================================================= -->
-    <!-- НОВАЯ ТЕМА ДЛЯ ВКЛАДОК (ЛЕГАЛЬНО ДЛЯ RESOURCE DICTIONARY)         -->
-    <!-- Эта тема автоматически применится ко всем вкладкам в Тулбаре      -->
-    <!-- ================================================================= -->
-    <ControlTheme x:Key="{x:Type TabStripItem}" TargetType="TabStripItem">
-        <!-- Базовые сеттеры, которые теперь МОЖНО переопределить в темах -->
-        <Setter Property="MinHeight" Value="0"/>
-        <Setter Property="Height" Value="24"/>
-        <Setter Property="Padding" Value="10,0"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="FontSize" Value="11"/>
-        
-        <!-- Пробиваем дефолтную высоту контент-презентера платформы -->
-        <Setter Property="Template">
-            <ControlTemplate>
-                <ContentPresenter x:Name="PART_ContentPresenter"
-                                  Background="{TemplateBinding Background}"
-                                  BorderBrush="{TemplateBinding BorderBrush}"
-                                  BorderThickness="{TemplateBinding BorderThickness}"
-                                  CornerRadius="{TemplateBinding CornerRadius}"
-                                  Content="{TemplateBinding Content}"
-                                  ContentTemplate="{TemplateBinding ContentTemplate}"
-                                  Padding="{TemplateBinding Padding}"
-                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
-            </ControlTemplate>
-        </Setter>
     </ControlTheme>
 
 </ResourceDictionary>
