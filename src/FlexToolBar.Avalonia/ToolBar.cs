@@ -24,10 +24,7 @@ namespace FlexToolBar.Avalonia
     {
         private Window? _parentWindow;
         private TabStrip? _tabStrip;
-        private bool _xamlDefaultIsSingleExpand = false;
         private string _currentlyLoadedThemeName = "Default";
-        private bool _isTabHeaderVisible;
-        private readonly Dictionary<string, object> _themeRegistry = new();
 
         private ScrollViewer? _scrollViewer;
         private Button? _scrollLeftButton;
@@ -42,26 +39,6 @@ namespace FlexToolBar.Avalonia
 
         public static string GetActiveThemeName(AvaloniaObject element) => element.GetValue(ActiveThemeNameProperty);
         public static void SetActiveThemeName(AvaloniaObject element, string value) => element.SetValue(ActiveThemeNameProperty, value);
-
-        public static readonly StyledProperty<ObservableCollection<string>> AvailableThemesProperty =
-            AvaloniaProperty.Register<ToolBar, ObservableCollection<string>>(
-                nameof(AvailableThemes),
-                new ObservableCollection<string>());
-
-        public ObservableCollection<string> AvailableThemes
-        {
-            get => GetValue(AvailableThemesProperty);
-            set => SetValue(AvailableThemesProperty, value);
-        }
-
-        public static readonly StyledProperty<global::Avalonia.Controls.Dock> PanelEdgeProperty =
-            AvaloniaProperty.Register<ToolBar, global::Avalonia.Controls.Dock>(nameof(PanelEdge), global::Avalonia.Controls.Dock.Top);
-
-        public global::Avalonia.Controls.Dock PanelEdge
-        {
-            get => GetValue(PanelEdgeProperty);
-            set => SetValue(PanelEdgeProperty, value);
-        }
 
         public static readonly StyledProperty<object> ScrollLeftContentProperty =
             AvaloniaProperty.Register<ToolBar, object>(nameof(ScrollLeftContent), "◀");
@@ -81,6 +58,7 @@ namespace FlexToolBar.Avalonia
             set => SetValue(ScrollRightContentProperty, value);
         }
 
+        // Parallel Data Bridge Properties (Clean Styled Properties, free for custom developer bindings)
         public static readonly AttachedProperty<double> GroupSpacingProperty =
             AvaloniaProperty.RegisterAttached<ToolBar, AvaloniaObject, double>("GroupSpacing", 6.0, inherits: true);
 
@@ -90,8 +68,37 @@ namespace FlexToolBar.Avalonia
         public static readonly StyledProperty<bool> IsSingleExpandGroupProperty =
             AvaloniaProperty.Register<ToolBar, bool>(nameof(IsSingleExpandGroup), defaultValue: false);
 
-        public static readonly StyledProperty<ObservableCollection<Tab>?> TabsProperty =
-            AvaloniaProperty.Register<ToolBar, ObservableCollection<Tab>?>(nameof(Tabs), defaultValue: null);
+        public bool IsSingleExpandGroup
+        {
+            get => GetValue(IsSingleExpandGroupProperty);
+            set => SetValue(IsSingleExpandGroupProperty, value);
+        }
+
+        public static readonly StyledProperty<bool> TabStripVisibleProperty =
+            AvaloniaProperty.Register<ToolBar, bool>(nameof(TabStripVisible), defaultValue: true);
+
+        public bool TabStripVisible
+        {
+            get => GetValue(TabStripVisibleProperty);
+            set => SetValue(TabStripVisibleProperty, value);
+        }
+        public static readonly StyledProperty<bool> TabsVisibleProperty =
+            AvaloniaProperty.Register<ToolBar, bool>(nameof(TabsVisible), defaultValue: true);
+
+        public bool TabsVisible
+        {
+            get => GetValue(TabsVisibleProperty);
+            set => SetValue(TabsVisibleProperty, value);
+        }
+
+        public static readonly StyledProperty<ObservableCollection<Tab>> TabsProperty =
+            AvaloniaProperty.Register<ToolBar, ObservableCollection<Tab>>(nameof(Tabs));
+
+        public ObservableCollection<Tab> Tabs
+        {
+            get => GetValue(TabsProperty);
+            set => SetValue(TabsProperty, value);
+        }
 
         public static readonly StyledProperty<string?> ToolBarIdProperty =
             AvaloniaProperty.Register<ToolBar, string?>(nameof(ToolBarId), defaultValue: null);
@@ -105,25 +112,37 @@ namespace FlexToolBar.Avalonia
         public static readonly StyledProperty<bool> RestoreSelectedTabProperty =
             AvaloniaProperty.Register<ToolBar, bool>(nameof(RestoreSelectedTab), defaultValue: false);
 
+        public bool RestoreSelectedTab
+        {
+            get => GetValue(RestoreSelectedTabProperty);
+            set => SetValue(RestoreSelectedTabProperty, value);
+        }
+
         public static readonly StyledProperty<TimeSpan> AutoSaveIntervalProperty =
             AvaloniaProperty.Register<ToolBar, TimeSpan>(nameof(AutoSaveInterval), defaultValue: TimeSpan.FromSeconds(5));
 
-        private static readonly DirectProperty<ToolBar, bool> IsTabHeaderVisibleProperty =
-            AvaloniaProperty.RegisterDirect<ToolBar, bool>(nameof(IsTabHeaderVisible), o => o.IsTabHeaderVisible);
+        public TimeSpan AutoSaveInterval
+        {
+            get => GetValue(AutoSaveIntervalProperty);
+            set => SetValue(AutoSaveIntervalProperty, value);
+        }
 
         static ToolBar()
         {
-            ToolBar.ActiveThemeNameProperty.Changed.AddClassHandler<ToolBar, string>(
-                (sender, args) => sender.OnActiveThemeNameChanged(args.NewValue.Value));
-
             TabsProperty.Changed.AddClassHandler<ToolBar>((x, e) => x.OnTabsChanged(e));
 
-            // Automated context hydration pipeline bound natively to runtime XML parsing stages
+            // UI -> Core Direction (Local geometric properties remain in ViewModel)
+            IsSingleExpandGroupProperty.Changed.AddClassHandler<ToolBar>((x, e) => { if (x.ViewModel is not null) x.ViewModel.IsSingleExpandGroup = e.GetNewValue<bool>(); });
+            TabStripVisibleProperty.Changed.AddClassHandler<ToolBar>((x, e) => { if (x.ViewModel is not null) x.ViewModel.TabStripVisible = e.GetNewValue<bool>(); });
+            TabsVisibleProperty.Changed.AddClassHandler<ToolBar>((x, e) => { if (x.ViewModel is not null) x.ViewModel.TabsVisible = e.GetNewValue<bool>(); });
+
+            // Global UI -> Core Triangulation: GroupSpacing now writes directly to the global manager root!
+            GroupSpacingProperty.Changed.AddClassHandler<ToolBar, double>((x, e) => { FlexLayoutManager.Instance.GroupSpacing = e.NewValue.Value; });
+            ActiveThemeNameProperty.Changed.AddClassHandler<ToolBar, string>((x, e) => { FlexLayoutManager.Instance.ActiveThemeName = e.NewValue.Value; });
+
             ToolBarIdProperty.Changed.AddClassHandler<ToolBar>((x, e) => x.OnToolBarIdChanged(e.GetNewValue<string?>()));
         }
-        /// <summary>
-        /// Accessor token exposing the active core view model resolved from the global store registry.
-        /// </summary>
+
         public FlexToolBarViewModel? ViewModel { get; private set; }
 
         public ToolBar()
@@ -132,38 +151,88 @@ namespace FlexToolBar.Avalonia
             ResetLayoutCommand = new MiniRelayCommand(() => FlexLayoutManager.DeleteLayout());
 
             if (Tabs != null) Tabs.CollectionChanged += OnTabsCollectionChanged;
-            UpdateTabHeaderVisibility();
-
-            AvailableThemes = ToolBarThemeManager.AvailableThemes;
 
             InitializeStaticSaveBridge();
 
             FlexLayoutManager.LayoutResetRequested += ResetToDefaultLayout;
         }
 
-        private void OnLayoutResetRequested()
-        {
-            Dispatcher.UIThread.Post(ResetToDefaultLayout, DispatcherPriority.Background);
-        }
+        public ICommand ResetLayoutCommand { get; }
 
-        // The Smart Declarative Context Hydration Pipeline
+        // Synchronous Context Assembly and Core Data Mapping Engine
         private void OnToolBarIdChanged(string? newId)
         {
             if (string.IsNullOrWhiteSpace(newId)) return;
 
-            // Extract or build the model directly inside our centralized memory store container
-            ViewModel = FlexLayoutManager.GetToolBar(newId);
+            // Strict Memory Hygiene: Instantly detach old reactive hooks to completely eliminate memory leaks
+            if (ViewModel != null) ViewModel.PropertyChanged -= OnCoreModelPropertyChanged;
+            FlexLayoutManager.Instance.PropertyChanged -= OnGlobalManagerPropertyChanged;
 
-            // Setup direct TwoWay reactive sync loops straight into the live model fields
-            this.Bind(IsSingleExpandGroupProperty, new global::Avalonia.Data.Binding(nameof(ViewModel.IsSingleExpandGroup)) { Source = ViewModel, Mode = global::Avalonia.Data.BindingMode.TwoWay });
-            this.Bind(GroupSpacingProperty, new global::Avalonia.Data.Binding(nameof(ViewModel.GroupSpacing)) { Source = ViewModel, Mode = global::Avalonia.Data.BindingMode.TwoWay });
-            this.Bind(ActiveThemeNameProperty, new global::Avalonia.Data.Binding(nameof(FlexLayoutManager.ActiveThemeName)) { Source = FlexLayoutManager.Instance, Mode = global::Avalonia.Data.BindingMode.TwoWay });
+            // Core Factory Gateway: Extracts or safely constructs the active view model tracking configuration updates
+            var targetModel = FlexLayoutManager.GetToolBar(newId);
+            if (targetModel == null) return;
 
-            // Ensure the active rendering engine immediately paints the cached workspace styles
+            // Cold Start Interception: Fresh runtime model absorbs unique inline declarative XAML default specifications
+            if (targetModel.IsNew)
+            {
+                targetModel.IsSingleExpandGroup = this.IsSingleExpandGroup;
+                targetModel.TabStripVisible = this.TabStripVisible;
+                targetModel.TabsVisible = this.TabsVisible;
+            }
+
+            ViewModel = targetModel;
+
+            // Synchronous Theme Pre-Loading: Ensures physical template assets parse completely BEFORE layout properties overlap
             ApplyThemeDirect(FlexLayoutManager.Instance.ActiveThemeName);
+            SetCurrentValue(ActiveThemeNameProperty, FlexLayoutManager.Instance.ActiveThemeName);
+
+            // Hot Start Reconstruction: Overrides underlying low-priority style metrics using high-priority values loaded from persistent JSON records
+            if (!ViewModel.IsNew)
+            {
+                SetCurrentValue(GroupSpacingProperty, FlexLayoutManager.Instance.GroupSpacing);
+                SetCurrentValue(IsSingleExpandGroupProperty, ViewModel.IsSingleExpandGroup);
+                SetCurrentValue(TabStripVisibleProperty, ViewModel.TabStripVisible);
+                SetCurrentValue(TabsVisibleProperty, ViewModel.TabsVisible);
+            }
+
+            // Arm Parallel Communication Channels: Activate live reactive loops now that initialization sequence is entirely complete
+            ViewModel.PropertyChanged += OnCoreModelPropertyChanged;
+            FlexLayoutManager.Instance.PropertyChanged += OnGlobalManagerPropertyChanged;
         }
 
-        // Autonomous UI-Thread Debounced Save Bridge (Protects core models from thread race conditions)
+        // Core -> UI Direction: Translates internal core state alterations to the layout engine without destroying third-party developer bindings
+        private void OnCoreModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+        {
+            if (ViewModel == null) return;
+
+            switch (args.PropertyName)
+            {
+                case nameof(ViewModel.IsSingleExpandGroup):
+                    SetCurrentValue(IsSingleExpandGroupProperty, ViewModel.IsSingleExpandGroup);
+                    break;
+                case nameof(ViewModel.TabStripVisible):
+                    SetCurrentValue(TabStripVisibleProperty, ViewModel.TabStripVisible);
+                    break;
+                case nameof(ViewModel.TabsVisible):
+                    SetCurrentValue(TabsVisibleProperty, ViewModel.TabsVisible);
+                    break;
+            }
+        }
+
+        // Global Manager -> UI Direction: Safely relays global configuration metrics down into individual instance frames
+        private void OnGlobalManagerPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+        {
+            if (args.PropertyName == nameof(FlexLayoutManager.Instance.ActiveThemeName))
+            {
+                ApplyThemeDirect(FlexLayoutManager.Instance.ActiveThemeName);
+                SetCurrentValue(ActiveThemeNameProperty, FlexLayoutManager.Instance.ActiveThemeName);
+            }
+            else if (args.PropertyName == nameof(FlexLayoutManager.Instance.GroupSpacing))
+            {
+                SetCurrentValue(GroupSpacingProperty, FlexLayoutManager.Instance.GroupSpacing);
+            }
+        }
+
         private static void InitializeStaticSaveBridge()
         {
             if (_isSaveBridgeSubscribed) return;
@@ -171,13 +240,13 @@ namespace FlexToolBar.Avalonia
 
             _globalSaveTimer = new DispatcherTimer(DispatcherPriority.Background)
             {
-                Interval = TimeSpan.FromSeconds(2.5) // Safe cooldown window before serialization
+                Interval = TimeSpan.FromSeconds(2.5)
             };
 
             _globalSaveTimer.Tick += (s, e) =>
             {
                 _globalSaveTimer.Stop();
-                FlexLayoutManager.SaveLayout(); // Commits the entire dictionary data block sequentially
+                FlexLayoutManager.SaveLayout();
             };
 
             FlexLayoutManager.Instance.PropertyChanged += (s, args) =>
@@ -186,54 +255,11 @@ namespace FlexToolBar.Avalonia
                 {
                     if (FlexLayoutManager.Instance.IsEdited)
                     {
-                        // Reset the debounce window clocks natively upon user interface changes
                         _globalSaveTimer.Stop();
                         _globalSaveTimer.Start();
                     }
                 }
             };
-        }
-
-        public bool IsSingleExpandGroup
-        {
-            get => GetValue(IsSingleExpandGroupProperty);
-            set => SetValue(IsSingleExpandGroupProperty, value);
-        }
-
-        public ObservableCollection<Tab> Tabs
-        {
-            get => GetValue(TabsProperty);
-            set => SetValue(TabsProperty, value);
-        }
-
-        public bool RestoreSelectedTab
-        {
-            get => GetValue(RestoreSelectedTabProperty);
-            set => SetValue(RestoreSelectedTabProperty, value);
-        }
-
-        public TimeSpan AutoSaveInterval
-        {
-            get => GetValue(AutoSaveIntervalProperty);
-            set => SetValue(AutoSaveIntervalProperty, value);
-        }
-
-        public bool IsTabHeaderVisible
-        {
-            get => _isTabHeaderVisible;
-            private set => SetAndRaise(IsTabHeaderVisibleProperty, ref _isTabHeaderVisible, value);
-        }
-
-        public ICommand ResetLayoutCommand { get; }
-
-        private void OnActiveThemeNameChanged(string selectedTheme)
-        {
-            if (string.IsNullOrEmpty(selectedTheme) || selectedTheme == _currentlyLoadedThemeName) return;
-
-            global::Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                ApplyThemeDirect(selectedTheme);
-            }, global::Avalonia.Threading.DispatcherPriority.Background);
         }
 
         private void SetTheme(string selectedTheme)
@@ -251,10 +277,9 @@ namespace FlexToolBar.Avalonia
 
         private void ApplyThemeDirect(string selectedTheme)
         {
-            if (string.IsNullOrEmpty(selectedTheme) || selectedTheme == _currentlyLoadedThemeName && Styles.Count>0) return;
+            if (string.IsNullOrEmpty(selectedTheme) || selectedTheme == _currentlyLoadedThemeName && Styles.Count > 0) return;
 
             _currentlyLoadedThemeName = selectedTheme;
-
             this.Styles.Clear();
 
             SetTheme("Default");
@@ -322,7 +347,6 @@ namespace FlexToolBar.Avalonia
         protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnAttachedToVisualTree(e);
-            _xamlDefaultIsSingleExpand = IsSingleExpandGroup;
 
             if (!string.IsNullOrWhiteSpace(ToolBarId))
             {
@@ -345,6 +369,7 @@ namespace FlexToolBar.Avalonia
                     if (item is FlexGroup uiGroup)
                     {
                         var groupModel = ViewModel.GetGroup(uiGroup.GroupId);
+                        if (groupModel == null) continue;
                         groupModel.TabId = Tab.GetTabId(uiTab);
 
                         uiGroup.BindToCoreModel(groupModel);
@@ -352,16 +377,19 @@ namespace FlexToolBar.Avalonia
                 }
             }
         }
+
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
+            if (ViewModel != null) ViewModel.PropertyChanged -= OnCoreModelPropertyChanged;
+            FlexLayoutManager.Instance.PropertyChanged -= OnGlobalManagerPropertyChanged;
             FlexLayoutManager.LayoutResetRequested -= ResetToDefaultLayout;
+
             if (_parentWindow != null) _parentWindow.Closing -= OnParentWindowClosing;
             base.OnDetachedFromVisualTree(e);
         }
 
         private void OnParentWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-            // HARDWARE SHIELD: Forces an instantaneous atomized save transaction when user closes the app
             FlexLayoutManager.SaveLayout();
         }
 
@@ -370,7 +398,8 @@ namespace FlexToolBar.Avalonia
             this.ClearValue(GroupSpacingProperty);
             this.ClearValue(IsSingleExpandGroupProperty);
             this.ClearValue(ActiveThemeNameProperty);
-
+            this.ClearValue(TabStripVisibleProperty);
+            this.ClearValue(TabsVisibleProperty);
 
             if (_tabStrip != null && Tabs.Any())
             {
@@ -397,7 +426,6 @@ namespace FlexToolBar.Avalonia
         {
             if (e.OldValue is ObservableCollection<Tab> oldCollection) oldCollection.CollectionChanged -= OnTabsCollectionChanged;
             if (e.NewValue is ObservableCollection<Tab> newCollection) newCollection.CollectionChanged += OnTabsCollectionChanged;
-            UpdateTabHeaderVisibility();
         }
 
         private void OnTabsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -416,12 +444,6 @@ namespace FlexToolBar.Avalonia
                     if (item is ILogical logicalItem) LogicalChildren.Add(logicalItem);
                 }
             }
-            UpdateTabHeaderVisibility();
-        }
-
-        private void UpdateTabHeaderVisibility()
-        {
-            IsTabHeaderVisible = Tabs != null && Tabs.Count > 1;
         }
     }
 

@@ -12,6 +12,8 @@ namespace FlexToolBar.Core;
 /// </summary>
 public abstract class ViewModelBase : INotifyPropertyChanged
 {
+    [JsonIgnore]
+    public bool IsNew { get; init; } = false;
     /// <inheritdoc />
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -35,13 +37,6 @@ public abstract class ViewModelBase : INotifyPropertyChanged
 
         OnPropertyChanged(propertyName);
         FlexLayoutManager.Instance.SetIsEdited();
-        return true;
-    }
-    protected virtual bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-        field = value;
-        OnPropertyChanged(propertyName);
         return true;
     }
 }

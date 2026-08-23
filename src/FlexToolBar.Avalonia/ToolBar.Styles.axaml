@@ -35,7 +35,7 @@
                                   ItemsSource="{TemplateBinding Tabs}"
                                   SelectedValueBinding="{Binding (ftb:Tab.TabId)}"
                                   SelectedValue="{Binding ViewModel.SelectedTabId, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
-                                  IsVisible="{Binding IsTabHeaderVisible, RelativeSource={RelativeSource TemplatedParent}}">
+                                  IsVisible="{Binding ViewModel.TabStripVisible, RelativeSource={RelativeSource AncestorType=ftb:ToolBar}}">
                             <!-- <TabStrip.Styles>
                                 <Style Selector="TabStripItem">
                                     <Setter Property="MinHeight" Value="20"/>

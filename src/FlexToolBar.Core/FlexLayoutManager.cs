@@ -22,6 +22,13 @@ namespace FlexToolBar.Core
                 RaiseAndSetIfChanged(ref field, value);
             }
         } = "Default";
+
+        public double GroupSpacing
+        {
+            get;
+            set => RaiseAndSetIfChanged(ref field, value);
+        } = 6.0;
+
     }
     public class FlexLayoutManager : LayoutSnapshot
     {
@@ -67,19 +74,19 @@ namespace FlexToolBar.Core
         }
 
         // 2. Factory Endpoint: Resolves or registers active workflow view models
-        public static FlexToolBarViewModel GetToolBar(string toolBarId)
+        public static FlexToolBarViewModel? GetToolBar(string toolBarId)
         {
-            if (string.IsNullOrWhiteSpace(toolBarId))
-                throw new ArgumentException("Identifier cannot be null or whitespace.", nameof(toolBarId));
+            if (string.IsNullOrEmpty(toolBarId)) return null;
 
-            if (Instance.Models.TryGetValue(toolBarId, out var existingModel))
+            if (Instance.Models.TryGetValue(toolBarId, out var existingBar))
             {
-                return existingModel;
+                return existingBar;
             }
 
-            var newModel = new FlexToolBarViewModel();
-            Instance.Models[toolBarId] = newModel;
-            return newModel;
+            var newBar = new FlexToolBarViewModel { IsNew = true };
+            Instance.Models[toolBarId] = newBar;
+
+            return newBar;
         }
 
         // 1. Monolithic Save: Commits the entire root manager instance structure to a single transaction file
@@ -112,6 +119,7 @@ namespace FlexToolBar.Core
                 var layoutSnapshot = JsonSerializer.Deserialize<LayoutSnapshot>(json, SerializerOptions);
                 if (layoutSnapshot == null) return false;
                 Instance.ActiveThemeName = layoutSnapshot.ActiveThemeName;
+                Instance.GroupSpacing = layoutSnapshot.GroupSpacing;
                 Instance.Models = layoutSnapshot.Models;
                 // CopyProperties(loadedManager, Instance, typeof(LayoutSnapshot));
 

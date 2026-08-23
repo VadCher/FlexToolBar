@@ -8,13 +8,13 @@ namespace FlexToolBar.Core
     {
         public Dictionary<string, FlexGroupViewModel> Groups { get; set; } = new();
 
-        public FlexGroupViewModel GetGroup(string groupId)
+        public FlexGroupViewModel? GetGroup(string groupId)
         {
-            if (string.IsNullOrEmpty(groupId)) return new FlexGroupViewModel();
-            FlexGroupViewModel? groupModel = default;
-            if (!Groups.TryGetValue(groupId, out groupModel))
+            if (string.IsNullOrEmpty(groupId)) return null;
+
+            if (!Groups.TryGetValue(groupId, out var groupModel))
             {
-                groupModel = new FlexGroupViewModel() { IsNew = true };
+                groupModel = new FlexGroupViewModel { IsNew = true };
                 Groups[groupId] = groupModel;
             }
 
@@ -23,15 +23,21 @@ namespace FlexToolBar.Core
             return groupModel;
         }
 
-        public double GroupSpacing
+        public bool TabStripVisible
         {
-            get => field;
+            get;
             set => RaiseAndSetIfChanged(ref field, value);
-        } = 6.0;
+        } = true;
+
+        public bool TabsVisible
+        {
+            get;
+            set => RaiseAndSetIfChanged(ref field, value);
+        } = true;
 
         public string SelectedTabId
         {
-            get => field;
+            get;
             set
             {
                 if (string.IsNullOrEmpty(value)) return;
@@ -39,19 +45,9 @@ namespace FlexToolBar.Core
             }
         } = string.Empty;
 
-        public string PanelEdge
-        {
-            get => field;
-            set
-            {
-                if (string.IsNullOrEmpty(value)) return;
-                RaiseAndSetIfChanged(ref field, value);
-            }
-        } = "Top";
-
         public bool IsSingleExpandGroup
         {
-            get => field;
+            get;
             set
             {
                 if (RaiseAndSetIfChanged(ref field, value) && value)

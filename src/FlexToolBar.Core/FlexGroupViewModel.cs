@@ -9,8 +9,6 @@ namespace FlexToolBar.Core
     /// </summary>
     public class FlexGroupViewModel : ViewModelBase
     {
-        [JsonIgnore]
-        public bool IsNew { get; init;} = false;
         private FlexToolBarViewModel? _parent;
         public FlexGroupViewModel() { }
         /// <summary>
@@ -20,49 +18,6 @@ namespace FlexToolBar.Core
         [JsonIgnore]
         public string TabId { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Gets or sets the display header for the group.
-        /// </summary>
-        [JsonIgnore]
-        public string Header
-        {
-            get => field;
-            set => RaiseAndSetIfChanged(ref field, value);
-        } = string.Empty;
-
-        /// <summary>
-        /// Gets or sets the secondary header displayed when the group is expanded.
-        /// </summary>
-        [JsonIgnore]
-        public string? ExpandedHeader
-        {
-            get => field;
-            set => RaiseAndSetIfChanged(ref field, value);
-        }
-
-        /// <summary>
-        /// Gets or sets the visual icon asset representing the group in its collapsed state.
-        /// </summary>
-        [JsonIgnore]
-        public object? Icon
-        {
-            get => field;
-            set => RaiseAndSetIfChanged(ref field, value);
-        }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the pinning toggle button is visible.
-        /// </summary>
-        [JsonIgnore]
-        public bool PinVisible
-        {
-            get => field;
-            set => RaiseAndSetIfChanged(ref field, value);
-        } = true;
-
-        /// <summary>
-        /// Gets the dynamic collection of child interactive elements hosted inside this group workspace.
-        /// </summary>
         [JsonIgnore]
         public ObservableCollection<object> Items { get; } = new();
 

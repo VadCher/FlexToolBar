@@ -5,6 +5,7 @@
     <!-- COMPACTblueprints: Targets components via flat cascading selectors without keys -->
     <Style Selector="ftb|ToolBar">
         <Setter Property="Padding" Value="0"/>
+        <Setter Property="ftb:ToolBar.GroupSpacing" Value="16.0"/>
     </Style>
 
     <Style Selector=":is(ftb|FlexGroup)">

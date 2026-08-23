@@ -15,27 +15,13 @@
     </Design.DataContext>
 
     <DockPanel>
-        <!-- Bottom control panel for system actions and tablet mode simulation -->
-        <Border DockPanel.Dock="Bottom" Background="#F3F3F3" BorderThickness="0,1,0,0" BorderBrush="LightGray">
-            <StackPanel Orientation="Horizontal" Spacing="25" HorizontalAlignment="Center">
-
-                <!-- Tablet Mode Switcher (Toggles single expand accordion layout) -->
-                <CheckBox Content="Enable Tablet Mode (IsSingleExpandGroup)"
-                          IsChecked="{Binding IsSingleExpandMode, Mode=TwoWay}"/>
-
-                <!-- Factory Reset Button linked natively to library command -->
-                <Button Content="Reset Ribbon to Defaults"
-                        Command="{Binding #DemoToolBar.ResetLayoutCommand}"
-                        Padding="12,5" Background="LightGray"/>
-            </StackPanel>
-        </Border>
 
         <!-- Dynamic Ribbon ToolBar Context -->
         <ftb:ToolBar x:Name="DemoToolBar"
                      ToolBarId="DemoToolBar"
                      RestoreSelectedTab="True"
                      DockPanel.Dock="Top"
-                     IsSingleExpandGroup="{Binding IsSingleExpandMode, Mode=TwoWay}">
+                     >
             <ftb:ToolBar.Tabs>
 
                 <!-- TAB 1: HOME WORKSPACE -->
@@ -73,7 +59,7 @@
                         <StackPanel Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,10,0">
                             <TextBlock Text="Зазоры панели" FontSize="10" Foreground="Gray" HorizontalAlignment="Center" Margin="0,0,0,2"/>
                             <Slider Minimum="2" Maximum="16" Width="95" VerticalAlignment="Center"
-                                    Value="{Binding GroupSpacing, Mode=TwoWay}"/>
+                                    Value="{Binding Source={x:Static ftbCore:FlexLayoutManager.Instance}, Path=GroupSpacing, Mode=TwoWay}"/>
                         </StackPanel>
 
                         <!-- COLUMN 2: Theme ComboBox -->
@@ -81,7 +67,7 @@
                             <TextBlock Text="Тема: " FontSize="11" VerticalAlignment="Center" Width="40"/>
                             <!-- ItemsSource links to root AvailableThemes collection via parent loop -->
                             <ComboBox Width="95" Height="24" FontSize="11" Padding="4,0"
-                                      ItemsSource="{Binding $parent[ftb:ToolBar].AvailableThemes}"
+                                      ItemsSource="{Binding Source={x:Static ftb:ToolBarThemeManager.AvailableThemes}}"
                                       SelectedItem="{Binding Source={x:Static ftbCore:FlexLayoutManager.Instance}, Path=ActiveThemeName, Mode=TwoWay}"/>
                         </StackPanel>
 
@@ -120,7 +106,8 @@
                      ToolBarId="SecondToolBar"
                      RestoreSelectedTab="True"
                      DockPanel.Dock="Top"
-                     IsSingleExpandGroup="{Binding IsSingleExpandMode, Mode=TwoWay}">
+                     
+                     >
             <ftb:ToolBar.Tabs>
                 <ftb:Tab Header="Вид" ftb:Tab.TabId="ViewTab">
                     <ftb:Tab.Items>

@@ -5,6 +5,7 @@
         <!-- GREEN COLOR PALETTE INJECTION -->
     <Style Selector="ftb|ToolBar">
         <Setter Property="Background" Value="#FFFEC6AE"/>
+        <Setter Property="ftb:ToolBar.GroupSpacing" Value="30.0"/>
     </Style>
     <Style Selector=":is(ftb|FlexGroup)">
         <Setter Property="Background" Value="#E2F0D9"/>

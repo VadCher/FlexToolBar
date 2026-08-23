@@ -3,21 +3,12 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Data;
 using FlexToolBar.Core;
 
 namespace FlexToolBar.Avalonia
 {
-    /// <summary>
-    /// Represents a smart responsive container control switching between collapsed and expanded states.
-    /// Fully preserves and cascades dynamic user-defined external XAML DataContext bindings.
-    /// </summary>
     public class FlexGroup : ContentControl
     {
-        // protected override Type StyleKeyOverride => typeof(FlexGroup);
-        public FlexGroup()
-        {
-        }
         private bool _xamlDefaultIsExpanded = true;
         private bool _xamlDefaultIsPinned = false;
         private bool _isRegistered;
@@ -38,29 +29,27 @@ namespace FlexToolBar.Avalonia
             AvaloniaProperty.Register<FlexGroup, object?>(nameof(Icon), null);
 
         public static readonly StyledProperty<bool> IsExpandedProperty =
-            AvaloniaProperty.Register<FlexGroup, bool>(
-                nameof(IsExpanded),
-                true,
-                defaultBindingMode: BindingMode.TwoWay);
+            AvaloniaProperty.Register<FlexGroup, bool>(nameof(IsExpanded), true);
 
         public static readonly StyledProperty<bool> IsPinnedProperty =
-            AvaloniaProperty.Register<FlexGroup, bool>(
-                nameof(IsPinned),
-                false,
-                defaultBindingMode: BindingMode.TwoWay);
+            AvaloniaProperty.Register<FlexGroup, bool>(nameof(IsPinned), false);
 
         public static readonly StyledProperty<bool> PinVisibleProperty =
             AvaloniaProperty.Register<FlexGroup, bool>(nameof(PinVisible), true);
 
         static FlexGroup()
         {
-            // FocusableProperty.OverrideMetadata<FlexGroup>(
-            //     new StyledPropertyMetadata<bool>(true));
-            IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => x.SyncUiToCore(nameof(FlexGroupViewModel.IsExpanded), e.GetNewValue<bool>()));
-            IsPinnedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => x.SyncUiToCore(nameof(FlexGroupViewModel.IsPinned), e.GetNewValue<bool>()));
+            // UI -> Core Direction: Intercepts active layout modifications and marshals them to the Core model layer
+            IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => { if (x.GroupViewModel is not null && x._isRegistered) x.GroupViewModel.IsExpanded = e.GetNewValue<bool>(); });
+            IsPinnedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => { if (x.GroupViewModel is not null && x._isRegistered) x.GroupViewModel.IsPinned = e.GetNewValue<bool>(); });
 
+            // Visual State Management: Triggers pseudo-class synchronization routines instantly upon state shifts
             IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => x.UpdatePseudoClasses());
             IsPinnedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => x.UpdatePseudoClasses());
+        }
+
+        public FlexGroup()
+        {
         }
 
         public global::Avalonia.Markup.Xaml.Templates.ControlTemplate? SeparatorTemplate
@@ -114,47 +103,54 @@ namespace FlexToolBar.Avalonia
         public bool XamlDefaultIsExpanded => _xamlDefaultIsExpanded;
         public bool XamlDefaultIsPinned => _xamlDefaultIsPinned;
 
-        /// <summary>
-        /// Extensible core view model state instance supporting clean external init pipelines.
-        /// </summary>
         public FlexGroupViewModel GroupViewModel { get; private set; } = new();
 
         protected override void OnAttachedToVisualTree(global::Avalonia.VisualTreeAttachmentEventArgs e)
         {
             base.OnAttachedToVisualTree(e);
-
             _xamlDefaultIsExpanded = IsExpanded;
             _xamlDefaultIsPinned = IsPinned;
-
             _isRegistered = true;
             UpdatePseudoClasses();
         }
+        // Clean Hydration Engine & Core/UI Communication Bridge Wire-up
         public void BindToCoreModel(FlexGroupViewModel coreModel)
         {
+            if (GroupViewModel != null) GroupViewModel.PropertyChanged -= OnCoreModelPropertyChanged;
+
+            // Cold Start Pipeline: Fresh runtime core model absorbs unique inline declarative XAML default specifications
             if (coreModel.IsNew)
             {
-                coreModel.IsExpanded = GroupViewModel.IsExpanded;
-                coreModel.IsPinned = GroupViewModel.IsPinned;
+                coreModel.IsExpanded = _xamlDefaultIsExpanded;
+                coreModel.IsPinned = _xamlDefaultIsPinned;
             }
+
             GroupViewModel = coreModel;
 
-            GroupViewModel.Header = this.Header;
-            GroupViewModel.ExpandedHeader = this.ExpandedHeader;
-            GroupViewModel.Icon = this.Icon;
-            GroupViewModel.PinVisible = this.PinVisible;
+            if (!GroupViewModel.IsNew)
+            {
+                SetCurrentValue(IsExpandedProperty, GroupViewModel.IsExpanded);
+                SetCurrentValue(IsPinnedProperty, GroupViewModel.IsPinned);
+            }
 
-            this.Bind(IsExpandedProperty, new Binding(nameof(GroupViewModel.IsExpanded)) { Source = GroupViewModel, Mode = BindingMode.TwoWay });
-            this.Bind(IsPinnedProperty, new Binding(nameof(GroupViewModel.IsPinned)) { Source = GroupViewModel, Mode = BindingMode.TwoWay });
+            GroupViewModel.PropertyChanged += OnCoreModelPropertyChanged;
 
             UpdatePseudoClasses();
         }
 
-        private void SyncUiToCore(string propertyName, object? newValue)
+        // Core -> UI Direction: Translates internal core state alterations to the layout engine safely preserving custom developer bindings
+        private void OnCoreModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
         {
-            if (!_isRegistered) return;
+            if (GroupViewModel == null) return;
 
-            if (propertyName == nameof(FlexGroupViewModel.IsExpanded)) GroupViewModel.IsExpanded = (bool)(newValue ?? true);
-            else if (propertyName == nameof(FlexGroupViewModel.IsPinned)) GroupViewModel.IsPinned = (bool)(newValue ?? false);
+            if (args.PropertyName == nameof(FlexGroupViewModel.IsExpanded))
+            {
+                SetCurrentValue(IsExpandedProperty, GroupViewModel.IsExpanded);
+            }
+            else if (args.PropertyName == nameof(FlexGroupViewModel.IsPinned))
+            {
+                SetCurrentValue(IsPinnedProperty, GroupViewModel.IsPinned);
+            }
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -184,6 +180,13 @@ namespace FlexToolBar.Avalonia
             PseudoClasses.Set(":expanded", IsExpanded);
             PseudoClasses.Set(":collapsed", !IsExpanded);
             PseudoClasses.Set(":pinned", IsPinned);
+        }
+
+        // Final Lifecycle Cleanup Step
+        protected override void OnDetachedFromVisualTree(global::Avalonia.VisualTreeAttachmentEventArgs e)
+        {
+            if (GroupViewModel != null) GroupViewModel.PropertyChanged -= OnCoreModelPropertyChanged;
+            base.OnDetachedFromVisualTree(e);
         }
     }
 }

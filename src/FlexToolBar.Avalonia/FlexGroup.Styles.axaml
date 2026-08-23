@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:ftb="clr-namespace:FlexToolBar.Avalonia">
+                    xmlns:ftb="clr-namespace:FlexToolBar.Avalonia"
+                    xmlns:ftbCore="using:FlexToolBar.Core">
 
     <ControlTheme x:Key="{x:Type ftb:FlexGroup}" TargetType="ftb:FlexGroup">
         <Setter Property="Background" Value="#FFE1E1E1"/>
@@ -56,7 +57,7 @@
                     </Border>
 
                     <ContentControl x:Name="PART_Separator" Grid.Column="2"
-                                    Width="{Binding (ftb:ToolBar.GroupSpacing), RelativeSource={RelativeSource AncestorType=ftb:ToolBar}}"
+                                    Width="{Binding Source={x:Static ftbCore:FlexLayoutManager.Instance}, Path=GroupSpacing, Mode=TwoWay}"
                                     Template="{TemplateBinding SeparatorTemplate}"
                                     IsVisible="{TemplateBinding IsVisible}"
                                     VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>

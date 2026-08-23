@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using FlexToolBar.Core;
 
 namespace FlexToolBar.Avalonia.Demo.Views
 {
@@ -10,7 +11,9 @@ namespace FlexToolBar.Avalonia.Demo.Views
     {
         public MainWindow()
         {
+            FlexLayoutManager.GetToolBar("SecondToolBar").TabStripVisible = false;
             InitializeComponent();
+            // SecondToolBar?.ViewModel?.TabStripVisible = false;
         }
     }
 }
