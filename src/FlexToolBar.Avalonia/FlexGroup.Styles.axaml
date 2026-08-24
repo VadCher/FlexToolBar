@@ -29,7 +29,8 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             Padding="{TemplateBinding Padding}"
-                            Margin="{TemplateBinding Margin}">
+                            Margin="{TemplateBinding Margin}"
+                            IsVisible="{Binding !GroupViewModel.IsExpanded, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}">
                         <Grid RowDefinitions="*,Auto">
                             <ContentPresenter Grid.Row="0" Content="{TemplateBinding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             <TextBlock Grid.Row="1" Text="{TemplateBinding Header}" HorizontalAlignment="Center"
@@ -43,10 +44,14 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             Padding="{TemplateBinding Padding}"
-                            Margin="{TemplateBinding Margin}">
-                        <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto">
-                            <Button x:Name="PART_PinButton" Grid.Row="0" Grid.Column="0" Content="🖈" MinHeight="0" MinWidth="0" Padding="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Top" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}" />
-                            <Button x:Name="PART_CloseButton" Grid.Row="1" Grid.Column="0" Content="✕" Padding="0" MinHeight="0" MinWidth="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            Margin="{TemplateBinding Margin}"
+                            IsVisible="{Binding GroupViewModel.IsExpanded, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}">
+                        <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto" >
+                            <ToggleButton x:Name="PART_PinButton" Grid.Row="0" Grid.Column="0"
+                            IsVisible="{Binding PinVisible, RelativeSource={RelativeSource TemplatedParent}}"
+                            IsChecked="{Binding GroupViewModel.IsPinned, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Button x:Name="PART_CloseButton" Grid.Row="1" Grid.Column="0" 
+                            IsVisible="{Binding !GroupViewModel.IsPinned, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}"/>
 
                             <ContentPresenter Grid.Row="0" Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" VerticalAlignment="Center"/>
 
@@ -64,27 +69,6 @@
                 </Grid>
             </ControlTemplate>
         </Setter>
-
-        <Style Selector="^:collapsed /template/ Button#PART_CollapsedButton">
-            <Setter Property="IsVisible" Value="True" />
-        </Style>
-        <Style Selector="^:collapsed /template/ Border#PART_ExpandedBorder">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-
-        <Style Selector="^:expanded /template/ Button#PART_CollapsedButton">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-        <Style Selector="^:expanded /template/ Border#PART_ExpandedBorder">
-            <Setter Property="IsVisible" Value="True" />
-        </Style>
-
-        <Style Selector="^:pinned /template/ Button#PART_PinButton">
-            <Setter Property="Foreground" Value="#0066CC" />
-        </Style>
-        <Style Selector="^:pinned /template/ Button#PART_CloseButton">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
 
         <Style Selector="^:hidden /template/ ContentControl#PART_Separator">
             <Setter Property="Width" Value="0" />

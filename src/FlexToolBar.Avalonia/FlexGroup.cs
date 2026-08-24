@@ -9,8 +9,6 @@ namespace FlexToolBar.Avalonia
 {
     public class FlexGroup : ContentControl
     {
-        private bool _xamlDefaultIsExpanded = true;
-        private bool _xamlDefaultIsPinned = false;
         private bool _isRegistered;
 
         public static readonly StyledProperty<global::Avalonia.Markup.Xaml.Templates.ControlTemplate?> SeparatorTemplateProperty =
@@ -39,13 +37,8 @@ namespace FlexToolBar.Avalonia
 
         static FlexGroup()
         {
-            // UI -> Core Direction: Intercepts active layout modifications and marshals them to the Core model layer
             IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => { if (x.GroupViewModel is not null && x._isRegistered) x.GroupViewModel.IsExpanded = e.GetNewValue<bool>(); });
             IsPinnedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => { if (x.GroupViewModel is not null && x._isRegistered) x.GroupViewModel.IsPinned = e.GetNewValue<bool>(); });
-
-            // Visual State Management: Triggers pseudo-class synchronization routines instantly upon state shifts
-            IsExpandedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => x.UpdatePseudoClasses());
-            IsPinnedProperty.Changed.AddClassHandler<FlexGroup>((x, e) => x.UpdatePseudoClasses());
         }
 
         public FlexGroup()
@@ -100,29 +93,29 @@ namespace FlexToolBar.Avalonia
             set => SetValue(PinVisibleProperty, value);
         }
 
-        public bool XamlDefaultIsExpanded => _xamlDefaultIsExpanded;
-        public bool XamlDefaultIsPinned => _xamlDefaultIsPinned;
+        private FlexGroupViewModel _groupViewModel = new();
 
-        public FlexGroupViewModel GroupViewModel { get; private set; } = new();
+        public static readonly DirectProperty<FlexGroup, FlexGroupViewModel> GroupViewModelProperty =
+            AvaloniaProperty.RegisterDirect<FlexGroup, FlexGroupViewModel>(nameof(GroupViewModel), o => o.GroupViewModel);
 
+        public FlexGroupViewModel GroupViewModel
+        {
+            get => _groupViewModel;
+            private set => SetAndRaise(GroupViewModelProperty, ref _groupViewModel, value);
+        }
         protected override void OnAttachedToVisualTree(global::Avalonia.VisualTreeAttachmentEventArgs e)
         {
             base.OnAttachedToVisualTree(e);
-            _xamlDefaultIsExpanded = IsExpanded;
-            _xamlDefaultIsPinned = IsPinned;
             _isRegistered = true;
-            UpdatePseudoClasses();
         }
-        // Clean Hydration Engine & Core/UI Communication Bridge Wire-up
         public void BindToCoreModel(FlexGroupViewModel coreModel)
         {
             if (GroupViewModel != null) GroupViewModel.PropertyChanged -= OnCoreModelPropertyChanged;
 
-            // Cold Start Pipeline: Fresh runtime core model absorbs unique inline declarative XAML default specifications
             if (coreModel.IsNew)
             {
-                coreModel.IsExpanded = _xamlDefaultIsExpanded;
-                coreModel.IsPinned = _xamlDefaultIsPinned;
+                coreModel.IsExpanded = IsExpanded;
+                coreModel.IsPinned = IsPinned;
             }
 
             GroupViewModel = coreModel;
@@ -135,10 +128,8 @@ namespace FlexToolBar.Avalonia
 
             GroupViewModel.PropertyChanged += OnCoreModelPropertyChanged;
 
-            UpdatePseudoClasses();
         }
 
-        // Core -> UI Direction: Translates internal core state alterations to the layout engine safely preserving custom developer bindings
         private void OnCoreModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
         {
             if (GroupViewModel == null) return;
@@ -157,32 +148,24 @@ namespace FlexToolBar.Avalonia
         {
             base.OnApplyTemplate(e);
 
-            var pinButton = e.NameScope.Find<Button>("PART_PinButton");
-            if (pinButton != null) pinButton.Click += (s, args) => { IsPinned = !IsPinned; };
-
             var closeButton = e.NameScope.Find<Button>("PART_CloseButton");
             if (closeButton != null)
             {
-                closeButton.Click += (s, args) => { if (!IsPinned) IsExpanded = false; };
+                closeButton.Click += (s, args) => { if (!GroupViewModel.IsPinned) GroupViewModel.IsExpanded = false; };
             }
 
             var collapsedButton = e.NameScope.Find<Button>("PART_CollapsedButton");
             if (collapsedButton != null)
             {
-                collapsedButton.Click += (s, args) => IsExpanded = true;
+                collapsedButton.Click += (s, args) => GroupViewModel.IsExpanded = true;
             }
-
-            UpdatePseudoClasses();
         }
-
-        private void UpdatePseudoClasses()
+        public void ResetToDefaultLayout()
         {
-            PseudoClasses.Set(":expanded", IsExpanded);
-            PseudoClasses.Set(":collapsed", !IsExpanded);
-            PseudoClasses.Set(":pinned", IsPinned);
+            ClearValue(IsPinnedProperty);
+            ClearValue(IsExpandedProperty);
         }
 
-        // Final Lifecycle Cleanup Step
         protected override void OnDetachedFromVisualTree(global::Avalonia.VisualTreeAttachmentEventArgs e)
         {
             if (GroupViewModel != null) GroupViewModel.PropertyChanged -= OnCoreModelPropertyChanged;
